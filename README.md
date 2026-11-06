@@ -1,2 +1,2 @@
 # womens-safety
-Women's Safety Companion – Full Stack Projec
+Womens Safety – A Full Stack Web Application
