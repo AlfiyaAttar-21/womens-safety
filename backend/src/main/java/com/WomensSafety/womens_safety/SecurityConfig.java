@@ -1,3 +1,4 @@
+
 package com.WomensSafety.womens_safety;
 
 import org.springframework.context.annotation.Bean;
@@ -19,8 +20,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/api/**").permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()
             );
+
         return http.build();
     }
 
