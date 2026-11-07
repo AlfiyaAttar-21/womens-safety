@@ -1,0 +1,18 @@
+# Secrets and local config
+application-local.properties
+.env
+.env.local
+
+# Node
+node_modules/
+dist/
+build/
+
+# IDEs and OS
+.classpath
+.project
+.settings/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
