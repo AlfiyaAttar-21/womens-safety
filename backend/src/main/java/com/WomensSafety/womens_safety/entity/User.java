@@ -1,29 +1,43 @@
 package com.WomensSafety.womens_safety.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.*;
-import java.time.LocalDateTime;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@Data
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @NotBlank
     private String name;
 
-    @Column(nullable = false, unique = true, length = 15)
-    private String phone;
+    @NotBlank
+    @Column(unique = true, nullable = false)
+    private String phoneNumber;
 
-    @Column(nullable = false)
+    @JsonIgnore
+    @NotBlank
     private String passwordHash;
 
-    @Column(nullable = false)
-    private String role = "ROLE_USER";
+    @JsonIgnore
+    @NotBlank
+    private String normalPinHash;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @JsonIgnore
+    @NotBlank
+    private String duressPinHash;
+
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Contact> contacts;
 }
