@@ -1,31 +1,34 @@
 package com.WomensSafety.womens_safety.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
 
 @Entity
 @Table(name = "contacts")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@Data
 public class Contact {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @NotBlank
     private String name;
 
-    @Column(nullable = false, length = 15)
+    @NotBlank
     private String phone;
 
     private String email;
-
     private String relationship;
 
-    @Column(nullable = false)
-    private String status = "PENDING";
+    @Enumerated(EnumType.STRING)
+    private ConsentStatus consentStatus = ConsentStatus.PENDING;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
-    private User user;
+    public enum ConsentStatus {
+        PENDING, ACCEPTED
+    }
 }
