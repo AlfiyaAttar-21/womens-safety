@@ -1,60 +1,56 @@
 package com.WomensSafety.womens_safety.controller;
 
-import com.WomensSafety.womens_safety.entity.User;
-import com.WomensSafety.womens_safety.service.UserService;
+import com.WomensSafety.womens_safety.dto.*;
+import com.WomensSafety.womens_safety.service.AuthService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*") // Allows your React frontend to connect easily
+@CrossOrigin(origins = "*")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final AuthService authService;
 
-    // Helper DTO for incoming registration requests
-    public static class RegisterRequest {
-        public String name;
-        public String phoneNumber;
-        public String password;
-        public String normalPin;
-        public String duressPin;
+    public UserController(AuthService authService) {
+        this.authService = authService;
     }
 
-    // 1. User Registration Endpoint
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
-        try {
-            User newUser = new User();
-            newUser.setName(request.name);
-            newUser.setPhoneNumber(request.phoneNumber);
-
-            User savedUser = userService.registerUser(
-                newUser, 
-                request.password, 
-                request.normalPin, 
-                request.duressPin
-            );
-            
-            return ResponseEntity.ok(savedUser);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error during registration: " + e.getMessage());
-        }
+    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest req) {
+        authService.register(req);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("message", "Registered. Enter the OTP sent to your phone"));
     }
 
-    // 2. Find User by Phone Number Endpoint
-    @GetMapping("/{phoneNumber}")
-    public ResponseEntity<?> getUserByPhone(@PathVariable String phoneNumber) {
-        Optional<User> user = userService.findByPhoneNumber(phoneNumber);
-        if (user.isPresent()) {
-            return ResponseEntity.ok(user.get());
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    @PostMapping("/verify-otp")
+    public Map<String, String> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
+        authService.verifyOtp(req);
+        return Map.of("message", "Phone verified. You can now log in");
+    }
+
+    @PostMapping("/resend-otp")
+    public Map<String, String> resendOtp(@RequestBody Map<String, String> body) {
+        authService.resendOtp(body.get("phoneNumber"));
+        return Map.of("message", "OTP sent");
+    }
+
+    @PostMapping("/login")
+    public AuthResponse login(@Valid @RequestBody LoginRequest req) {
+        return authService.login(req);
+    }
+
+    @PostMapping("/refresh")
+    public AuthResponse refresh(@Valid @RequestBody RefreshRequest req) {
+        return authService.refresh(req.getRefreshToken());
+    }
+
+    @GetMapping("/me")
+    public Map<String, Object> me(Authentication authentication) {
+        return Map.of("userId", authentication.getPrincipal());
     }
 }

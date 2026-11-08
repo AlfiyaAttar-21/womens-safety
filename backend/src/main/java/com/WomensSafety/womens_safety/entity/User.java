@@ -1,43 +1,42 @@
 package com.WomensSafety.womens_safety.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter @Setter
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
+    @Column(nullable = false, length = 100)
     private String name;
 
-    @NotBlank
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true, length = 15)
     private String phoneNumber;
 
-    @JsonIgnore
-    @NotBlank
+    @Column(nullable = false)
     private String passwordHash;
 
-    @JsonIgnore
-    @NotBlank
+    @Column(nullable = false)
     private String normalPinHash;
 
-    @JsonIgnore
-    @NotBlank
+    @Column(nullable = false)
     private String duressPinHash;
 
-    @JsonIgnore
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Contact> contacts;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.ROLE_USER;
+
+    private boolean phoneVerified = false;
+
+    // false = suspended (REQ-ADM-04)
+    private boolean active = true;
+
+    private LocalDateTime createdAt = LocalDateTime.now();
 }
