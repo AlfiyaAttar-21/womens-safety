@@ -3,6 +3,11 @@ import Login from './Pages/Login'
 import Register from './Pages/Register'
 import Dashboard from './Pages/Dashboard'
 import TrustedContacts from './Pages/TrustedContacts'
+import SafeJourney from './Pages/SafeJourney'
+import IncidentReporting from './Pages/IncidentRepository'
+import RiskMap from './Pages/RiskMap'
+import AIChatbot from './Pages/AIChatbot'
+import MyProfile from './Pages/MyProfile'
 
 function App() {
   const path = window.location.pathname
@@ -26,6 +31,30 @@ function App() {
   if (path === '/trusted-contacts') {
     return <TrustedContacts />
   }
+
+  //SafeJourney Page
+  if (path === '/safe-journey')
+     return <SafeJourney />
+
+//IncidentRepository page
+  if (path === '/incident-reporting') {
+  return <IncidentReporting />
+}
+
+//RiskMap Page
+if (path === '/risk-map') {
+  return <RiskMap />
+}
+
+//AIChatbot
+if (path === '/ai-assistant') {
+  return <AIChatbot />
+}
+
+//MyProfile
+if (path === '/my-profile') {
+  return <MyProfile />
+}
 
   return (
     <div className="app">

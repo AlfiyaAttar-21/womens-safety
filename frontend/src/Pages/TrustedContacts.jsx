@@ -183,6 +183,7 @@ return (
             <div className="contact-actions">
 
               <button
+              type="button"
                 className="edit-btn"
                 onClick={() => editContact(index)}
               >
@@ -190,6 +191,7 @@ return (
               </button>
 
               <button
+              type="button"
                 className="delete-btn"
                 onClick={() => deleteContact(index)}
               >
