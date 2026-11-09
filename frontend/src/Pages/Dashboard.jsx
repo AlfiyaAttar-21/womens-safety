@@ -1,4 +1,7 @@
 
+import { useEffect, useState } from 'react'
+import api from '../services/api'
+
 import {
   LayoutDashboard,
   Users,
@@ -17,6 +20,34 @@ import {
 } from 'lucide-react'
 
 function Dashboard() {
+
+  const [userName, setUserName] = useState(
+    sessionStorage.getItem('safeherUserName') || 'SafeHer User'
+  )
+
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await api.get('/users/me')
+
+        if (response.data.userId) {
+          setUserName(
+            sessionStorage.getItem('safeherUserName') || 'SafeHer User'
+          )
+        }
+
+      } catch (error) {
+        console.error('Dashboard user verification failed:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUser()
+  }, [])
+
   const services = [
     {
       title: 'Trusted Contacts',
@@ -60,6 +91,16 @@ function Dashboard() {
     window.location.href = link
   }
 
+  const handleLogout = () => {
+    sessionStorage.removeItem('safeherAccessToken')
+    sessionStorage.removeItem('safeherRefreshToken')
+    sessionStorage.removeItem('safeherUserId')
+    sessionStorage.removeItem('safeherUserName')
+    sessionStorage.removeItem('safeherPhoneNumber')
+
+    window.location.href = '/login'
+  }
+
   return (
     <div className="min-h-screen bg-[#faf8f2] flex">
 
@@ -77,6 +118,7 @@ function Dashboard() {
         </div>
 
         <div className="px-4 mt-6">
+
           <p className="text-xs font-semibold text-[#6b6550] uppercase mb-4 px-3">
             Main Menu
           </p>
@@ -106,9 +148,11 @@ function Dashboard() {
               </button>
             )
           })}
+
         </div>
 
         <div className="mt-auto p-4 border-t border-[#d9cfb0]">
+
           <button
             onClick={() => openPage('/my-profile')}
             className="w-full flex items-center gap-3 px-4 py-3 text-[#6b6550] hover:bg-[#e7dbbf] rounded-xl"
@@ -118,12 +162,13 @@ function Dashboard() {
           </button>
 
           <button
-            onClick={() => openPage('/')}
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl"
           >
             <LogOut size={20} />
             Logout
           </button>
+
         </div>
 
       </aside>
@@ -163,31 +208,35 @@ function Dashboard() {
                 <p className="text-sm font-semibold text-[#2c2a1e]">
                   My Account
                 </p>
+
                 <p className="text-xs text-[#6b6550]">
-                  SafeHer User
+                  {loading ? 'Loading...' : userName}
                 </p>
               </div>
             </button>
 
           </div>
+
         </header>
 
         {/* Welcome Banner */}
         <section className="bg-gradient-to-r from-[#6b7a3a] to-[#8d9d4f] rounded-2xl p-8 text-white mb-8 relative overflow-hidden">
 
           <div className="relative z-10">
+
             <p className="text-[#f0ead6] text-sm font-medium mb-2">
               YOUR SAFETY MATTERS
             </p>
 
             <h1 className="text-3xl font-bold mb-3">
-              Welcome to SafeHer!
+              Welcome to SafeHer, {userName}!
             </h1>
 
             <p className="text-[#f5f0e0] max-w-xl">
               Your personal safety companion is here to help you
               stay protected, connected and confident.
             </p>
+
           </div>
 
           <ShieldCheck

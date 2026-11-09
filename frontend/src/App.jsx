@@ -8,9 +8,10 @@ import IncidentReporting from './Pages/IncidentRepository'
 import RiskMap from './Pages/RiskMap'
 import AIChatbot from './Pages/AIChatbot'
 import MyProfile from './Pages/MyProfile'
+import VerifyOTP from './Pages/VerifyOTP'
 
 function App() {
-  const path = window.location.pathname
+  const path = window.location.pathname.replace(/\/+$/, '') || '/'
 
   // Login Page
   if (path === '/login') {
@@ -56,6 +57,10 @@ if (path === '/my-profile') {
   return <MyProfile />
 }
 
+// Verify OTP Page
+if (path === '/verify-otp' || path === '/verify-otp/') {
+  return <VerifyOTP />
+}
   return (
     <div className="app">
 
