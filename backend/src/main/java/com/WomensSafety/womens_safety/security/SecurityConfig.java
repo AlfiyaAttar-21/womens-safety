@@ -1,3 +1,4 @@
+
 package com.WomensSafety.womens_safety.security;
 
 import org.springframework.context.annotation.Bean;
@@ -11,6 +12,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -27,13 +33,43 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    // CORS configuration for React frontend
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://localhost:5173"
+        ));
+
+        configuration.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
+        ));
+
+        configuration.setAllowedHeaders(List.of(
+                "Authorization", "Content-Type"
+        ));
+
+        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-            .cors(cors -> {})
+            .csrf(csrf -> csrf.disable())
 
             .httpBasic(basic -> basic.disable())
 
@@ -42,37 +78,45 @@ public class SecurityConfig {
             .logout(logout -> logout.disable())
 
             .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
             .exceptionHandling(exception ->
-                exception.authenticationEntryPoint(
-                    new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
-                )
+                    exception.authenticationEntryPoint(
+                            new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+                    )
             )
 
             .authorizeHttpRequests(auth -> auth
 
-                // Public APIs (no login needed)
-                .requestMatchers(
-                    "/api/users/register",
-                    "/api/users/verify-otp",
-                    "/api/users/resend-otp",
-                    "/api/users/login",
-                    "/api/users/refresh",
-                    "/api/contacts/consent/**"
-                ).permitAll()
+                    // Public authentication endpoints
+                    .requestMatchers(
+                            "/api/users/register",
+                            "/api/users/verify-otp",
+                            "/api/users/resend-otp",
+                            "/api/users/login",
+                            "/api/users/refresh"
+                    ).permitAll()
 
-                // Admin APIs
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                    // Public tracking link
+                    .requestMatchers(
+                            "/api/tracking/public/**",
+                            "/api/sos/track/**"
+                    ).permitAll()
 
-                // All remaining APIs require JWT authentication
-                .anyRequest().authenticated()
+                    // WebSocket handshake
+                    .requestMatchers("/ws/**").permitAll()
+
+                    // Admin-only APIs
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                    // Every other API requires JWT authentication
+                    .anyRequest().authenticated()
             )
 
             .addFilterBefore(
-                jwtAuthFilter,
-                UsernamePasswordAuthenticationFilter.class
+                    jwtAuthFilter,
+                    UsernamePasswordAuthenticationFilter.class
             );
 
         return http.build();
