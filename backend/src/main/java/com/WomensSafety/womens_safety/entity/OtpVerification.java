@@ -1,13 +1,16 @@
+
 package com.WomensSafety.womens_safety.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "otp_verifications")
-@Getter @Setter
+@Getter
+@Setter
 public class OtpVerification {
 
     @Id
@@ -24,4 +27,7 @@ public class OtpVerification {
     private LocalDateTime expiresAt;
 
     private int attempts = 0;
+
+    // Tracks last OTP request time
+    private LocalDateTime sentAt;
 }

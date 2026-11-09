@@ -1,8 +1,12 @@
 
 package com.WomensSafety.womens_safety.security;
 
+import com.WomensSafety.womens_safety.entity.User;
+import com.WomensSafety.womens_safety.repository.UserRepository;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,71 +25,80 @@ import java.util.List;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final UserRepository userRepository;
 
-    public JwtAuthFilter(JwtService jwtService) {
+    public JwtAuthFilter(
+            JwtService jwtService,
+            UserRepository userRepository) {
+
         this.jwtService = jwtService;
+        this.userRepository = userRepository;
     }
 
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain chain) throws ServletException, IOException {
+            FilterChain filterChain)
+            throws ServletException, IOException {
 
-        String header = request.getHeader("Authorization");
+        String authHeader = request.getHeader("Authorization");
 
-        if (header != null && header.startsWith("Bearer ")) {
-
-            try {
-                String token = header.substring(7);
-
-                Claims claims = jwtService.parse(token);
-
-                // Only access tokens are accepted
-                String tokenType = claims.get("type", String.class);
-
-                if (!"access".equals(tokenType)) {
-                    response.sendError(
-                        HttpServletResponse.SC_UNAUTHORIZED,
-                        "Invalid token type"
-                    );
-                    return;
-                }
-
-                Long userId = Long.valueOf(claims.getSubject());
-
-                String role = claims.get("role", String.class);
-
-                if (role == null || userId <= 0) {
-                    response.sendError(
-                        HttpServletResponse.SC_UNAUTHORIZED,
-                        "Invalid token"
-                    );
-                    return;
-                }
-
-                UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                        userId,
-                        null,
-                        List.of(new SimpleGrantedAuthority(role))
-                    );
-
-                SecurityContextHolder.getContext()
-                    .setAuthentication(authentication);
-
-            } catch (JwtException | IllegalArgumentException e) {
-
-                SecurityContextHolder.clearContext();
-
-                response.sendError(
-                    HttpServletResponse.SC_UNAUTHORIZED,
-                    "Invalid or expired token"
-                );
-                return;
-            }
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        chain.doFilter(request, response);
+        String token = authHeader.substring(7);
+
+        try {
+            Claims claims = jwtService.parse(token);
+
+            String tokenType = claims.get("type", String.class);
+
+            if (!"access".equals(tokenType)) {
+                response.sendError(
+                        HttpServletResponse.SC_UNAUTHORIZED,
+                        "Access token required");
+                return;
+            }
+
+            Long userId = Long.valueOf(claims.getSubject());
+
+            User user = userRepository.findById(userId).orElse(null);
+
+            if (user == null || !user.isActive()) {
+                response.sendError(
+                        HttpServletResponse.SC_UNAUTHORIZED,
+                        "User not found or inactive");
+                return;
+            }
+
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+
+                SimpleGrantedAuthority authority =
+                        new SimpleGrantedAuthority(user.getRole().name());
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                user,
+                                null,
+                                List.of(authority));
+
+                SecurityContextHolder.getContext()
+                        .setAuthentication(authentication);
+            }
+
+        } catch (JwtException | IllegalArgumentException exception) {
+
+            SecurityContextHolder.clearContext();
+
+            response.sendError(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "Invalid or expired JWT token");
+            return;
+        }
+
+        filterChain.doFilter(request, response);
     }
 }
