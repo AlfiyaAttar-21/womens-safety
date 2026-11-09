@@ -22,13 +22,11 @@ public class SecurityConfig {
         this.jwtAuthFilter = jwtAuthFilter;
     }
 
-    // Password encoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // Security configuration
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -36,6 +34,12 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
 
             .cors(cors -> {})
+
+            .httpBasic(basic -> basic.disable())
+
+            .formLogin(form -> form.disable())
+
+            .logout(logout -> logout.disable())
 
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -49,24 +53,23 @@ public class SecurityConfig {
 
             .authorizeHttpRequests(auth -> auth
 
-                // Public endpoints
+                // Public APIs (no login needed)
                 .requestMatchers(
                     "/api/users/register",
                     "/api/users/verify-otp",
                     "/api/users/resend-otp",
                     "/api/users/login",
                     "/api/users/refresh",
-                    "/api/users/*"
+                    "/api/contacts/consent/**"
                 ).permitAll()
 
-                // Admin endpoints
+                // Admin APIs
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                // All other endpoints require authentication
+                // All remaining APIs require JWT authentication
                 .anyRequest().authenticated()
             )
 
-            // JWT authentication filter
             .addFilterBefore(
                 jwtAuthFilter,
                 UsernamePasswordAuthenticationFilter.class
