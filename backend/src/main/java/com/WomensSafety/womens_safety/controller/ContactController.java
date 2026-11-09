@@ -1,45 +1,63 @@
 package com.WomensSafety.womens_safety.controller;
 
-import com.WomensSafety.womens_safety.entity.Contact;
-import com.WomensSafety.womens_safety.entity.User;
-import com.WomensSafety.womens_safety.repository.ContactRepository;
-import com.WomensSafety.womens_safety.repository.UserRepository;
+import com.WomensSafety.womens_safety.dto.ContactRequest;
+import com.WomensSafety.womens_safety.dto.ContactResponse;
+import com.WomensSafety.womens_safety.service.ContactService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/contacts")
 @CrossOrigin(origins = "*")
 public class ContactController {
 
-    @Autowired
-    private ContactRepository contactRepository;
+    private final ContactService contactService;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    // Add a trusted contact for a user
-    @PostMapping("/user/{userId}")
-    public ResponseEntity<?> addContact(@PathVariable Long userId, @Valid @RequestBody Contact contactDetails) {
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body("User not found");
-        }
-
-        contactDetails.setUser(userOpt.get());
-        Contact savedContact = contactRepository.save(contactDetails);
-        return ResponseEntity.ok(savedContact);
+    public ContactController(ContactService contactService) {
+        this.contactService = contactService;
     }
 
-    // Get all contacts for a user
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Contact>> getContactsByUser(@PathVariable Long userId) {
-        List<Contact> contacts = contactRepository.findByUserId(userId);
-        return ResponseEntity.ok(contacts);
+    // ----- logged-in user -----
+
+    @PostMapping
+    public ResponseEntity<ContactResponse> add(Authentication auth, @Valid @RequestBody ContactRequest req) {
+        Long userId = (Long) auth.getPrincipal();
+        return ResponseEntity.status(HttpStatus.CREATED).body(contactService.addContact(userId, req));
+    }
+
+    @GetMapping
+    public List<ContactResponse> list(Authentication auth) {
+        return contactService.listContacts((Long) auth.getPrincipal());
+    }
+
+    @DeleteMapping("/{id}")
+    public Map<String, String> remove(Authentication auth, @PathVariable Long id) {
+        contactService.removeContact((Long) auth.getPrincipal(), id);
+        return Map.of("message", "Contact removed");
+    }
+
+    @PostMapping("/{id}/resend-consent")
+    public Map<String, String> resend(Authentication auth, @PathVariable Long id) {
+        contactService.resendConsent((Long) auth.getPrincipal(), id);
+        return Map.of("message", "Consent message sent again");
+    }
+
+    // ----- the trusted contact (no login, uses the token from the SMS) -----
+
+    @PostMapping("/consent/{token}/accept")
+    public Map<String, String> accept(@PathVariable String token) {
+        contactService.accept(token);
+        return Map.of("message", "Thank you. You will now receive alerts");
+    }
+
+    @PostMapping("/consent/{token}/opt-out")
+    public Map<String, String> optOut(@PathVariable String token) {
+        contactService.optOut(token);
+        return Map.of("message", "You will no longer receive alerts");
     }
 }
