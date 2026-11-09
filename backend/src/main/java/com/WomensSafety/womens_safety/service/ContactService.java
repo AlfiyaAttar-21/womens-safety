@@ -74,6 +74,50 @@ public class ContactService {
     public List<ContactResponse> listContacts(Long userId) {
         return contactRepository.findByUserId(userId).stream().map(ContactResponse::from).toList();
     }
+    
+    @Transactional
+    public ContactResponse updateContact(Long userId, Long contactId, ContactRequest req) {
+
+        User user = findUser(userId);
+
+        Contact c = contactRepository.findByIdAndUserId(contactId, userId)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND, "Contact not found"));
+
+        if (req.getPhone().equals(user.getPhoneNumber())) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "You cannot add your own number");
+        }
+
+        boolean phoneChanged = !c.getPhone().equals(req.getPhone());
+
+        if (phoneChanged &&
+                contactRepository.existsByUserIdAndPhone(userId, req.getPhone())) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "This number is already in your contacts");
+        }
+
+        c.setName(req.getName().trim());
+        c.setPhone(req.getPhone());
+        c.setEmail(req.getEmail());
+        c.setRelationship(req.getRelationship());
+
+        if (phoneChanged) {
+            c.setConsentStatus(ConsentStatus.PENDING);
+            c.setStatus(ConsentStatus.PENDING.name());
+            newConsentRequest(c);
+        }
+
+        contactRepository.save(c);
+
+        if (phoneChanged) {
+            sendConsentSms(user, c);
+        }
+
+        return ContactResponse.from(c);
+    }
 
     @Transactional
     public void removeContact(Long userId, Long contactId) {

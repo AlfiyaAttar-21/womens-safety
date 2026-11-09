@@ -34,6 +34,16 @@ public class ContactController {
     public List<ContactResponse> list(Authentication auth) {
         return contactService.listContacts((Long) auth.getPrincipal());
     }
+    
+    @PutMapping("/{id}")
+    public ContactResponse update(
+            Authentication auth,
+            @PathVariable Long id,
+            @Valid @RequestBody ContactRequest req) {
+
+        Long userId = (Long) auth.getPrincipal();
+        return contactService.updateContact(userId, id, req);
+    }
 
     @DeleteMapping("/{id}")
     public Map<String, String> remove(Authentication auth, @PathVariable Long id) {
