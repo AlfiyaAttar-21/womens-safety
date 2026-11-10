@@ -1,18 +1,33 @@
-# Secrets and local config
-application-local.properties
-.env
-.env.local
 
-# Node
+# Java / Spring Boot
+target/
+*.class
+*.log
+
+# React / Node
 node_modules/
 dist/
 build/
 
-# IDEs and OS
+# Environment variables and secrets
+.env
+.env.local
+.env.development.local
+.env.production.local
+application-secrets.properties
+*.pem
+*.key
+
+# IDE files
+.metadata/
+.settings/
 .classpath
 .project
-.settings/
-.idea/
-*.iml
+
+# Operating system
 .DS_Store
 Thumbs.db
+
+application-local.properties
+.idea/
+*.iml
