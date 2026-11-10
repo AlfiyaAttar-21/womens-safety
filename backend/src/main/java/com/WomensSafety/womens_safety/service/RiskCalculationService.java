@@ -54,7 +54,7 @@ public class RiskCalculationService {
         }
 
         // Delete old grid cells before rebuilding
-        gridCellRepository.deleteAll();
+        gridCellRepository.deleteAllInBatch();
 
         // Calculate risk for each geographical cell
         for (Map.Entry<String, List<Report>> entry

@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react'
 import api from '../services/api'
 import {
@@ -50,10 +51,6 @@ function SafeJourney() {
   async function handleStartJourney(e) {
     e.preventDefault()
 
-    console.log('BUTTON CLICKED')
-    console.log('START JOURNEY FUNCTION CALLED')
-    console.log('USER ID:', userId)
-
     setError('')
     setMessage('')
 
@@ -82,8 +79,6 @@ function SafeJourney() {
     try {
       setLoading(true)
 
-      console.log('SENDING JOURNEY API REQUEST...')
-
       const response = await api.post(
         '/journeys/start/' + userId,
         {
@@ -91,8 +86,6 @@ function SafeJourney() {
           expectedArrivalTime: arrivalDate + 'T' + arrivalTime + ':00'
         }
       )
-
-      console.log('JOURNEY API RESPONSE:', response.data)
 
       const journey = response.data
 
@@ -114,9 +107,6 @@ function SafeJourney() {
 
     } catch (err) {
       console.error('START JOURNEY ERROR:', err)
-      console.log('HTTP STATUS:', err.response?.status)
-      console.log('BACKEND ERROR MESSAGE:', err.response?.data)
-      console.log('BACKEND RESPONSE HEADERS:', err.response?.headers)
 
       setError(
         err.response?.data?.message ||
@@ -126,7 +116,6 @@ function SafeJourney() {
         err.message ||
         'Unable to start journey.'
       )
-
     } finally {
       setLoading(false)
     }
@@ -158,6 +147,7 @@ function SafeJourney() {
     if (watchIdRef.current !== null && navigator.geolocation) {
       navigator.geolocation.clearWatch(watchIdRef.current)
       watchIdRef.current = null
+      console.log('GPS WATCH STOPPED')
     }
   }
 
@@ -173,9 +163,14 @@ function SafeJourney() {
     try {
       setLoading(true)
 
+      // Stop any previous GPS watch before starting a new one.
+      stopGpsWatch()
+
+      console.log('SENDING TRACKING START REQUEST')
+
       const response = await api.post('/tracking/start')
 
-      console.log('TRACKING RESPONSE:', response.data)
+      console.log('NEW TRACKING STARTED:', response.data)
 
       const token = response.data.trackingToken
       const url = response.data.trackingUrl
@@ -188,12 +183,16 @@ function SafeJourney() {
       setTrackingUrl(url || '')
       setTrackingActive(true)
 
+      console.log('TRACKING ACTIVE SET TO TRUE')
+
       setMessage('Live tracking started. Getting your GPS location...')
 
       const watchId = navigator.geolocation.watchPosition(
         async (position) => {
           const latitude = position.coords.latitude
           const longitude = position.coords.longitude
+
+          console.log('GPS LOCATION RECEIVED:', latitude, longitude)
 
           setLastLocation({ latitude, longitude })
 
@@ -203,8 +202,12 @@ function SafeJourney() {
               latitude,
               longitude
             })
+
+            console.log('LOCATION SENT SUCCESSFULLY')
+
           } catch (err) {
             console.error('LOCATION UPDATE ERROR:', err)
+
             setError(
               err.response?.data?.message ||
               'Unable to send GPS location to server.'
@@ -212,6 +215,8 @@ function SafeJourney() {
           }
         },
         (gpsError) => {
+          console.error('GPS ERROR:', gpsError)
+
           setError('GPS error: ' + gpsError.message)
         },
         {
@@ -223,8 +228,15 @@ function SafeJourney() {
 
       watchIdRef.current = watchId
 
+      console.log('GPS WATCH ID:', watchId)
+
     } catch (err) {
       console.error('TRACKING ERROR:', err)
+
+      setTrackingActive(false)
+      setTrackingToken('')
+      setTrackingUrl('')
+
       setError(
         err.response?.data?.message ||
         err.message ||
@@ -238,6 +250,10 @@ function SafeJourney() {
   async function handleStopTracking() {
     try {
       setLoading(true)
+      setError('')
+
+      console.log('STOP TRACKING BUTTON CLICKED')
+
       stopGpsWatch()
 
       await api.post('/tracking/stop')
@@ -251,6 +267,7 @@ function SafeJourney() {
 
     } catch (err) {
       console.error('STOP TRACKING ERROR:', err)
+
       setError(err.response?.data?.message || 'Unable to stop tracking.')
     } finally {
       setLoading(false)
@@ -274,8 +291,10 @@ function SafeJourney() {
       )
 
       if (trackingActive) {
+        console.log('STOPPING TRACKING BECAUSE JOURNEY COMPLETED')
+
         stopGpsWatch()
-        await api.post('/tracking/stop').catch(err => console.error(err))
+        await api.post('/tracking/stop')
       }
 
       setJourneyStarted(false)
@@ -317,8 +336,10 @@ function SafeJourney() {
       )
 
       if (trackingActive) {
+        console.log('STOPPING TRACKING BECAUSE JOURNEY CANCELLED')
+
         stopGpsWatch()
-        await api.post('/tracking/stop').catch(err => console.error(err))
+        await api.post('/tracking/stop')
       }
 
       setJourneyStarted(false)
@@ -346,6 +367,7 @@ function SafeJourney() {
   async function handleCopyTrackingLink() {
     try {
       await navigator.clipboard.writeText(trackingUrl)
+
       setMessage('Tracking link copied successfully!')
       setError('')
     } catch (err) {
@@ -365,6 +387,7 @@ function SafeJourney() {
   function formatTime(time) {
     const [hours, minutes] = time.split(':')
     const date = new Date()
+
     date.setHours(Number(hours), Number(minutes))
 
     return date.toLocaleTimeString('en-IN', {
