@@ -13,6 +13,7 @@ import MyProfile from './Pages/MyProfile'
 import VerifyOTP from './Pages/VerifyOTP'
 import Consent from './Pages/Consent'
 import TrackLocation from './Pages/TrackLocation'
+import ForgotPassword from './Pages/ForgotPassword'
 
 function App() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/'
@@ -27,7 +28,7 @@ function App() {
   if (path === '/ai-assistant') return <AIChatbot />
   if (path === '/my-profile') return <MyProfile />
   if (path === '/verify-otp') return <VerifyOTP />
-
+  if (path === '/forgot-password') return <ForgotPassword />
   // Trusted contact consent page
   if (path.startsWith('/consent/')) {
     return <Consent />

@@ -1,8 +1,7 @@
+
 package com.WomensSafety.womens_safety.security;
 
 import java.util.List;
-
-import com.WomensSafety.womens_safety.security.JwtAuthFilter;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,7 +41,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
-                "http://localhost:5174"
+                "http://localhost:5173"
         ));
 
         config.setAllowedMethods(List.of(
@@ -76,13 +75,9 @@ public class SecurityConfig {
 
         http
             .cors(Customizer.withDefaults())
-
             .csrf(csrf -> csrf.disable())
-
             .httpBasic(basic -> basic.disable())
-
             .formLogin(form -> form.disable())
-
             .logout(logout -> logout.disable())
 
             .sessionManagement(session ->
@@ -103,13 +98,15 @@ public class SecurityConfig {
                 // CORS preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // Authentication APIs
+                // Public authentication APIs
                 .requestMatchers(
                     "/api/users/register",
                     "/api/users/verify-otp",
                     "/api/users/resend-otp",
                     "/api/users/login",
-                    "/api/users/refresh"
+                    "/api/users/refresh",
+                    "/api/users/forgot-password",
+                    "/api/users/reset-password"
                 ).permitAll()
 
                 // Consent APIs

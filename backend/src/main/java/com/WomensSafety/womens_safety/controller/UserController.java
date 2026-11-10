@@ -78,6 +78,37 @@ public class UserController {
         return authService.refresh(req.getRefreshToken());
     }
 
+    // Forgot Password - Send OTP
+    @PostMapping("/forgot-password")
+    public Map<String, String> forgotPassword(
+            @RequestBody ForgotPasswordRequest req) {
+
+        authService.requestPasswordResetOtp(req.getPhoneNumber());
+
+        return Map.of(
+                "message",
+                "If this verified account exists, a password reset OTP has been sent."
+        );
+    }
+
+    // Reset Password
+    @PostMapping("/reset-password")
+    public Map<String, String> resetPassword(
+            @RequestBody ResetPasswordRequest req) {
+
+        authService.resetPassword(
+                req.getPhoneNumber(),
+                req.getOtp(),
+                req.getNewPassword(),
+                req.getConfirmPassword()
+        );
+
+        return Map.of(
+                "message",
+                "Password reset successful. Please login with your new password."
+        );
+    }
+
     // Get Current Logged-in User
     @GetMapping("/me")
     public Map<String, Object> me(

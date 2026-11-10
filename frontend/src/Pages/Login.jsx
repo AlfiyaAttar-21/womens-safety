@@ -146,8 +146,8 @@ function Login() {
           </div>
 
           <div className="forgot-password">
-            <a href="#">Forgot Password?</a>
-          </div>
+         <a href="/forgot-password">Forgot Password?</a>
+        </div>
 
           {error && (
             <p style={{ color: '#c93c37', fontSize: '14px' }}>

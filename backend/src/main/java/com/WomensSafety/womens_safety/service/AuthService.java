@@ -38,7 +38,7 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    // REQ-AUTH-01 and REQ-AUTH-05
+    // Register
     @Transactional
     public void register(RegisterRequest req) {
 
@@ -77,11 +77,10 @@ public class AuthService {
 
         userRepository.save(user);
 
-        // Generate and send OTP
         otpService.sendOtp(user.getPhoneNumber());
     }
 
-    // Resend OTP
+    // Resend Registration OTP
     public void resendOtp(String phoneNumber) {
 
         User user = userRepository.findByPhoneNumber(phoneNumber)
@@ -100,7 +99,7 @@ public class AuthService {
         otpService.sendOtp(phoneNumber);
     }
 
-    // Verify OTP
+    // Verify Registration OTP
     @Transactional(noRollbackFor = ApiException.class)
     public void verifyOtp(VerifyOtpRequest req) {
 
@@ -120,7 +119,7 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    // REQ-AUTH-02: Login
+    // Login
     public AuthResponse login(LoginRequest req) {
 
         User user = userRepository.findByPhoneNumber(req.getPhoneNumber())
@@ -154,6 +153,76 @@ public class AuthService {
         }
 
         return tokensFor(user);
+    }
+
+    // Request Forgot Password OTP
+    public void requestPasswordResetOtp(String phoneNumber) {
+
+        User user = userRepository.findByPhoneNumber(phoneNumber)
+                .orElse(null);
+
+        // Only send OTP to verified and active accounts
+        if (user == null ||
+                !user.isPhoneVerified() ||
+                !user.isActive()) {
+            return;
+        }
+
+        otpService.sendPasswordResetOtp(phoneNumber);
+    }
+
+    // Reset Password
+    @Transactional(noRollbackFor = ApiException.class)
+    public void resetPassword(
+            String phoneNumber,
+            String otp,
+            String newPassword,
+            String confirmPassword) {
+
+        if (phoneNumber == null ||
+                !phoneNumber.matches("[6-9][0-9]{9}")) {
+
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Enter a valid 10-digit phone number"
+            );
+        }
+
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Password must contain at least 8 characters"
+            );
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Passwords do not match"
+            );
+        }
+
+        User user = userRepository.findByPhoneNumber(phoneNumber)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.BAD_REQUEST,
+                        "Invalid password reset request"
+                ));
+
+        if (!user.isPhoneVerified() || !user.isActive()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Password reset is not available for this account"
+            );
+        }
+
+        // Verify OTP before updating password
+        otpService.verifyPasswordResetOtp(phoneNumber, otp);
+
+        user.setPasswordHash(
+                passwordEncoder.encode(newPassword)
+        );
+
+        userRepository.save(user);
     }
 
     // Refresh access and refresh tokens
