@@ -66,7 +66,7 @@ public class LiveTrackingService {
         return Map.of(
                 "message", "Live tracking started",
                 "trackingToken", token,
-                "trackingUrl", "http://localhost:5183/track/" + token
+                "trackingUrl", "http://localhost:5173/track/" + token
         );
     }
 

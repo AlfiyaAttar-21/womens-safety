@@ -36,14 +36,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         this.userRepository = userRepository;
     }
 
-    // Skip JWT authentication for public Risk Map APIs
+    // Skip JWT authentication for public APIs
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
 
         String path = request.getServletPath();
 
         return path.equals("/api/grid-cells")
-                || path.startsWith("/api/grid-cells/");
+                || path.startsWith("/api/grid-cells/")
+                || path.startsWith("/api/tracking/public/");
     }
 
     @Override

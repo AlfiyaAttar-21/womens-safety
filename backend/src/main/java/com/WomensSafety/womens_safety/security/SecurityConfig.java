@@ -118,7 +118,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/sos/track/**",
                     "/api/journeys/track/**",
-                    "/api/grid-cells/**"
+                    "/api/grid-cells/**",
+                    "/api/tracking/public/**"
                 ).permitAll()
 
                 // Other endpoints require JWT authentication

@@ -1,5 +1,9 @@
 
 import { useEffect, useState } from 'react'
+import 'leaflet/dist/leaflet.css'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import L from 'leaflet'
+
 import {
   MapPin,
   ShieldCheck,
@@ -14,34 +18,87 @@ import {
 import api from '../services/api'
 import '../App.css'
 
+// Create Risk Marker Icon
+const createRiskIcon = (color) => {
+  return L.divIcon({
+    className: 'risk-marker-icon',
+    html: `
+      <div style="
+        width: 20px;
+        height: 20px;
+        background-color: ${color};
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      "></div>
+    `,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13]
+  })
+}
+
 function RiskMap() {
+
   const [cells, setCells] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [location, setLocation] = useState(null)
   const [locationError, setLocationError] = useState('')
 
-  const fetchRiskCells = async () => {
+  // Fetch Risk Cells from Backend
+  const fetchRiskCells = async (showLoading = false) => {
+
     try {
-      setLoading(true)
-      setError('')
+
+      if (showLoading) {
+        setLoading(true)
+      }
 
       const response = await api.get('/grid-cells')
 
       setCells(Array.isArray(response.data) ? response.data : [])
+
+      setError('')
+
     } catch (err) {
+
       console.error('Risk Map Error:', err)
-      setError('Unable to load risk map data. Please try again.')
+
+      // Show error for initial load or manual refresh
+      if (showLoading) {
+        setError('Unable to load risk map data. Please try again.')
+      }
+
     } finally {
-      setLoading(false)
+
+      if (showLoading) {
+        setLoading(false)
+      }
+
     }
   }
 
+  // Initial Load and Automatic Refresh Every 5 Seconds
   useEffect(() => {
-    fetchRiskCells()
+
+    // Load risk data when page opens
+    fetchRiskCells(true)
+
+    // Automatically fetch updated risk data every 5 seconds
+    const interval = setInterval(() => {
+      fetchRiskCells(false)
+    }, 5000)
+
+    // Stop automatic refresh when component closes
+    return () => {
+      clearInterval(interval)
+    }
+
   }, [])
 
+  // Get Current Location
   const getMyLocation = () => {
+
     setLocationError('')
 
     if (!navigator.geolocation) {
@@ -50,39 +107,57 @@ function RiskMap() {
     }
 
     navigator.geolocation.getCurrentPosition(
+
       (position) => {
+
         setLocation({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
         })
+
       },
+
       () => {
+
         setLocationError(
           'Unable to access location. Please allow location permission.'
         )
+
       },
+
       {
         enableHighAccuracy: true,
         timeout: 10000
       }
+
     )
   }
 
+  // Get Risk Level
   const getRiskLevel = (score) => {
+
     if (score === null || score === undefined) return 'Unknown'
 
     if (score < 30) return 'Low'
+
     if (score < 60) return 'Medium'
+
     return 'High'
   }
 
+  // Get Risk Color
   const getRiskColor = (level) => {
+
     if (level === 'Low') return '#16a34a'
+
     if (level === 'Medium') return '#d97706'
+
     if (level === 'High') return '#dc2626'
+
     return '#64748b'
   }
 
+  // Calculate Risk Counts
   const lowCount = cells.filter(
     cell => getRiskLevel(cell.riskScore) === 'Low'
   ).length
@@ -95,15 +170,15 @@ function RiskMap() {
     cell => getRiskLevel(cell.riskScore) === 'High'
   ).length
 
-  const mapUrl = location
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${location.longitude - 0.02}%2C${location.latitude - 0.02}%2C${location.longitude + 0.02}%2C${location.latitude + 0.02}&layer=mapnik&marker=${location.latitude}%2C${location.longitude}`
-    : null
-
   return (
+
     <div style={styles.page}>
 
+      {/* Header */}
       <div style={styles.header}>
+
         <div>
+
           <h1 style={styles.heading}>
             <MapPin size={27} /> Safety Risk Map
           </h1>
@@ -111,47 +186,60 @@ function RiskMap() {
           <p style={styles.subtitle}>
             Explore available safety risk information in your area.
           </p>
+
         </div>
 
         <button
-          onClick={fetchRiskCells}
+          onClick={() => fetchRiskCells(true)}
           style={styles.refreshButton}
         >
           <RefreshCw size={17} />
           Refresh
         </button>
+
       </div>
 
+      {/* Information Box */}
       <div style={styles.infoBox}>
+
         <Info size={20} />
 
         <span>
           Risk information is based on data available in the system.
-          An empty result means that no risk-cell data is currently available.
+          Risk information refreshes automatically every 5 seconds.
         </span>
+
       </div>
 
+      {/* Current Location */}
       <div style={styles.locationCard}>
+
         <div>
+
           <h3 style={styles.cardHeading}>
             <Navigation size={19} /> Your Current Location
           </h3>
 
           {location ? (
+
             <p style={styles.locationText}>
               Latitude: {location.latitude.toFixed(5)}
               <br />
               Longitude: {location.longitude.toFixed(5)}
             </p>
+
           ) : (
+
             <p style={styles.locationText}>
               Allow location access to view your location on the map.
             </p>
+
           )}
 
           {locationError && (
             <p style={styles.errorText}>{locationError}</p>
           )}
+
         </div>
 
         <button
@@ -161,95 +249,272 @@ function RiskMap() {
           <LocateFixed size={17} />
           Use My Location
         </button>
+
       </div>
 
+      {/* Map View */}
       <div style={styles.mapCard}>
+
         <h3 style={styles.cardHeading}>
           <Map size={20} /> Map View
         </h3>
 
-        {location && mapUrl ? (
-          <iframe
-            title="OpenStreetMap"
-            src={mapUrl}
-            width="100%"
-            height="380"
-            style={styles.mapFrame}
-            loading="lazy"
-          />
+        {location ? (
+
+          <MapContainer
+            center={[location.latitude, location.longitude]}
+            zoom={18}
+            style={{
+              height: '380px',
+              width: '100%',
+              borderRadius: '10px'
+            }}
+          >
+
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution="&copy; OpenStreetMap contributors"
+            />
+
+            {/* Current Location Marker */}
+            <Marker
+              position={[location.latitude, location.longitude]}
+              icon={createRiskIcon('#16a34a')}
+            >
+
+              <Popup>
+                Your Current Location
+              </Popup>
+
+            </Marker>
+
+            {/* Risk Cell Markers */}
+            {cells.map((cell) => {
+
+              if (
+                cell.latitude == null ||
+                cell.longitude == null
+              ) {
+                return null
+              }
+
+              const level = getRiskLevel(cell.riskScore)
+
+              return (
+
+                <Marker
+                  key={cell.id}
+                  position={[cell.latitude, cell.longitude]}
+                  icon={createRiskIcon(getRiskColor(level))}
+                >
+
+                  <Popup>
+
+                    <strong>{level} Risk</strong>
+
+                    <br />
+
+                    Grid Cell: {cell.geohashCell}
+
+                    <br />
+
+                    Risk Score: {cell.riskScore}
+
+                  </Popup>
+
+                </Marker>
+
+              )
+
+            })}
+
+          </MapContainer>
+
         ) : (
+
           <div style={styles.mapPlaceholder}>
+
             <MapPin size={42} />
+
             <h3>Location Not Selected</h3>
-            <p>Click "Use My Location" to display the map.</p>
+
+            <p>
+              Click "Use My Location" to display the map.
+            </p>
+
           </div>
+
         )}
+
       </div>
 
-      <h2 style={styles.sectionHeading}>Risk Overview</h2>
+      {/* Risk Level Legend */}
+      <div style={styles.legendCard}>
+
+        <h3 style={styles.legendHeading}>
+          Risk Level Legend
+        </h3>
+
+        <div style={styles.legendItem}>
+
+          <span
+            style={{
+              ...styles.legendDot,
+              backgroundColor: '#16a34a'
+            }}
+          ></span>
+
+          <span>Low Risk (0 - 29)</span>
+
+        </div>
+
+        <div style={styles.legendItem}>
+
+          <span
+            style={{
+              ...styles.legendDot,
+              backgroundColor: '#d97706'
+            }}
+          ></span>
+
+          <span>Medium Risk (30 - 59)</span>
+
+        </div>
+
+        <div style={styles.legendItem}>
+
+          <span
+            style={{
+              ...styles.legendDot,
+              backgroundColor: '#dc2626'
+            }}
+          ></span>
+
+          <span>High Risk (60 - 100)</span>
+
+        </div>
+
+      </div>
+
+      {/* Risk Overview */}
+      <h2 style={styles.sectionHeading}>
+        Risk Overview
+      </h2>
 
       <div style={styles.statsGrid}>
+
         <div style={styles.statCard}>
+
           <ShieldCheck color="#16a34a" size={27} />
-          <h2 style={{ ...styles.statNumber, color: '#16a34a' }}>
+
+          <h2 style={{
+            ...styles.statNumber,
+            color: '#16a34a'
+          }}>
             {lowCount}
           </h2>
+
           <p>Low Risk Cells</p>
+
         </div>
 
         <div style={styles.statCard}>
+
           <AlertTriangle color="#d97706" size={27} />
-          <h2 style={{ ...styles.statNumber, color: '#d97706' }}>
+
+          <h2 style={{
+            ...styles.statNumber,
+            color: '#d97706'
+          }}>
             {mediumCount}
           </h2>
+
           <p>Medium Risk Cells</p>
+
         </div>
 
         <div style={styles.statCard}>
+
           <AlertTriangle color="#dc2626" size={27} />
-          <h2 style={{ ...styles.statNumber, color: '#dc2626' }}>
+
+          <h2 style={{
+            ...styles.statNumber,
+            color: '#dc2626'
+          }}>
             {highCount}
           </h2>
+
           <p>High Risk Cells</p>
+
         </div>
+
       </div>
 
-      <h2 style={styles.sectionHeading}>Available Risk Cells</h2>
+      {/* Available Risk Cells */}
+      <h2 style={styles.sectionHeading}>
+        Available Risk Cells
+      </h2>
 
       {loading ? (
-        <p style={styles.message}>Loading risk information...</p>
+
+        <p style={styles.message}>
+          Loading risk information...
+        </p>
+
       ) : error ? (
+
         <div style={styles.errorBox}>
+
           {error}
-          <button onClick={fetchRiskCells} style={styles.retryButton}>
+
+          <button
+            onClick={() => fetchRiskCells(true)}
+            style={styles.retryButton}
+          >
             Try Again
           </button>
+
         </div>
+
       ) : cells.length === 0 ? (
+
         <div style={styles.emptyBox}>
+
           <MapPin size={35} color="#64748b" />
+
           <h3>No Risk Data Available</h3>
+
           <p>
             No grid cells have been calculated yet.
             Submit reports with location coordinates and configure
             risk calculation to populate this section.
           </p>
+
         </div>
+
       ) : (
+
         <div style={styles.cellList}>
+
           {cells.map((cell) => {
+
             const level = getRiskLevel(cell.riskScore)
 
             return (
-              <div key={cell.id} style={styles.cellCard}>
+
+              <div
+                key={cell.id}
+                style={styles.cellCard}
+              >
+
                 <div>
+
                   <h3 style={styles.cellTitle}>
                     Grid Cell: {cell.geohashCell}
                   </h3>
 
                   <p style={styles.cellText}>
-                    Risk Score:{' '}
-                    {cell.riskScore ?? 'Not calculated'}
+                    Risk Score: {cell.riskScore ?? 'Not calculated'}
                   </p>
 
                   <p style={styles.cellText}>
@@ -258,6 +523,7 @@ function RiskMap() {
                       ? new Date(cell.lastCalculatedAt).toLocaleString()
                       : 'Not available'}
                   </p>
+
                 </div>
 
                 <span
@@ -268,34 +534,50 @@ function RiskMap() {
                 >
                   {level} Risk
                 </span>
+
               </div>
+
             )
+
           })}
+
         </div>
+
       )}
 
+      {/* Safety Reminder */}
       <div style={styles.safetyNote}>
+
         <ShieldCheck size={21} />
+
         <div>
+
           <strong>Safety Reminder</strong>
+
           <p>
             This map is an informational tool, not a guarantee of safety.
             For emergencies in India, call 112.
           </p>
+
         </div>
+
       </div>
 
     </div>
+
   )
 }
 
+// CSS Styles
 const styles = {
+
   page: {
     padding: '25px',
     color: '#1e293b',
     maxWidth: '1200px',
     margin: '0 auto'
   },
+
   header: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -304,6 +586,7 @@ const styles = {
     gap: '15px',
     marginBottom: '22px'
   },
+
   heading: {
     display: 'flex',
     alignItems: 'center',
@@ -311,10 +594,12 @@ const styles = {
     fontSize: '27px',
     margin: '0 0 8px'
   },
+
   subtitle: {
     color: '#64748b',
     margin: 0
   },
+
   refreshButton: {
     display: 'flex',
     alignItems: 'center',
@@ -326,6 +611,7 @@ const styles = {
     color: 'white',
     cursor: 'pointer'
   },
+
   infoBox: {
     display: 'flex',
     alignItems: 'flex-start',
@@ -336,6 +622,7 @@ const styles = {
     borderRadius: '10px',
     marginBottom: '20px'
   },
+
   locationCard: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -348,6 +635,7 @@ const styles = {
     boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
     marginBottom: '20px'
   },
+
   cardHeading: {
     display: 'flex',
     alignItems: 'center',
@@ -355,11 +643,13 @@ const styles = {
     margin: '0 0 12px',
     fontSize: '19px'
   },
+
   locationText: {
     color: '#64748b',
     lineHeight: '1.7',
     margin: 0
   },
+
   locationButton: {
     display: 'flex',
     alignItems: 'center',
@@ -371,6 +661,7 @@ const styles = {
     padding: '12px 17px',
     cursor: 'pointer'
   },
+
   mapCard: {
     background: 'white',
     padding: '20px',
@@ -378,10 +669,7 @@ const styles = {
     boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
     marginBottom: '25px'
   },
-  mapFrame: {
-    border: 'none',
-    borderRadius: '10px'
-  },
+
   mapPlaceholder: {
     height: '300px',
     background: '#f1f5f9',
@@ -393,15 +681,48 @@ const styles = {
     color: '#64748b',
     textAlign: 'center'
   },
+
+  // Risk Legend Styles
+  legendCard: {
+    background: 'white',
+    padding: '18px',
+    borderRadius: '10px',
+    marginBottom: '25px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+  },
+
+  legendHeading: {
+    fontSize: '18px',
+    margin: '0 0 15px'
+  },
+
+  legendItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginTop: '12px',
+    color: '#475569',
+    fontSize: '14px'
+  },
+
+  legendDot: {
+    width: '15px',
+    height: '15px',
+    borderRadius: '50%',
+    display: 'inline-block'
+  },
+
   sectionHeading: {
     fontSize: '21px',
     margin: '25px 0 15px'
   },
+
   statsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
     gap: '15px'
   },
+
   statCard: {
     background: 'white',
     padding: '20px',
@@ -409,14 +730,17 @@ const styles = {
     textAlign: 'center',
     boxShadow: '0 2px 10px rgba(0,0,0,0.06)'
   },
+
   statNumber: {
     fontSize: '30px',
     margin: '10px 0 5px'
   },
+
   message: {
     color: '#64748b',
     padding: '20px'
   },
+
   emptyBox: {
     background: '#f8fafc',
     border: '1px solid #e2e8f0',
@@ -425,10 +749,12 @@ const styles = {
     textAlign: 'center',
     color: '#64748b'
   },
+
   cellList: {
     display: 'grid',
     gap: '12px'
   },
+
   cellCard: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -440,15 +766,18 @@ const styles = {
     borderRadius: '10px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
   },
+
   cellTitle: {
     margin: '0 0 8px',
     fontSize: '16px'
   },
+
   cellText: {
     color: '#64748b',
     fontSize: '13px',
     margin: '5px 0'
   },
+
   riskBadge: {
     color: 'white',
     padding: '7px 13px',
@@ -456,6 +785,7 @@ const styles = {
     fontSize: '13px',
     fontWeight: 'bold'
   },
+
   safetyNote: {
     display: 'flex',
     alignItems: 'flex-start',
@@ -466,21 +796,25 @@ const styles = {
     borderRadius: '10px',
     marginTop: '25px'
   },
+
   errorText: {
     color: '#dc2626',
     fontSize: '13px'
   },
+
   errorBox: {
     background: '#fef2f2',
     color: '#b91c1c',
     padding: '20px',
     borderRadius: '10px'
   },
+
   retryButton: {
     marginLeft: '12px',
     padding: '8px 12px',
     cursor: 'pointer'
   }
+
 }
 
 export default RiskMap

@@ -23,6 +23,9 @@ public class ReportService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private RiskCalculationService riskCalculationService;
+
     public Report createReport(Report report, Long userId) {
 
         if (userId != null) {
@@ -35,7 +38,12 @@ public class ReportService {
 
         report.setId(null);
 
-        return reportRepository.save(report);
+        Report savedReport = reportRepository.save(report);
+
+        // Automatically calculate risk after saving report
+        riskCalculationService.calculateRisk();
+
+        return savedReport;
     }
 
     public List<Report> getReportsByUser(Long userId) {

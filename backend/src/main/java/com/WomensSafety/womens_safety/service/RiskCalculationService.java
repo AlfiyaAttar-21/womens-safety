@@ -38,22 +38,25 @@ public class RiskCalculationService {
 
         Map<String, List<Report>> groupedReports = new HashMap<>();
 
-        // Group reports using geohash
+        // Group reports using first 7 characters of geohash
         for (Report report : reports) {
 
             if (report.getGeohash() == null ||
-                    report.getGeohash().length() < 6) {
+                    report.getGeohash().length() < 7) {
                 continue;
             }
 
-            String cell = report.getGeohash().substring(0, 6);
+            String cell = report.getGeohash().substring(0, 7);
 
             groupedReports
                     .computeIfAbsent(cell, key -> new ArrayList<>())
                     .add(report);
         }
 
-        // Calculate risk for each cell
+        // Delete old grid cells before rebuilding
+        gridCellRepository.deleteAll();
+
+        // Calculate risk for each geographical cell
         for (Map.Entry<String, List<Report>> entry
                 : groupedReports.entrySet()) {
 
@@ -84,7 +87,7 @@ public class RiskCalculationService {
 
                     if (days >= 0 && days <= 7) {
                         weight = 1.5;
-                    } else if (days <= 30 && days >= 0) {
+                    } else if (days > 7 && days <= 30) {
                         weight = 1.2;
                     }
                 }
@@ -108,18 +111,15 @@ public class RiskCalculationService {
                     averageSeverity * 0.7 + frequencyScore
             );
 
-            // Find existing cell or create new cell
-            GridCell gridCell = gridCellRepository
-                    .findByGeohashCell(cell)
-                    .orElseGet(GridCell::new);
+            // Create a new grid cell
+            GridCell gridCell = new GridCell();
 
-            // Save cell information
             gridCell.setGeohashCell(cell);
 
             gridCell.setRiskScore(
                     Math.round(riskScore * 100.0) / 100.0);
 
-            // Save geographical center
+            // Calculate geographical center
             gridCell.setLatitude(
                     totalLatitude / cellReports.size());
 
