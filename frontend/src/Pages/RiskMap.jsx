@@ -1,368 +1,486 @@
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
-  ShieldCheck,
   MapPin,
-  Search,
+  ShieldCheck,
   AlertTriangle,
-  ShieldCheck as SafeIcon,
+  RefreshCw,
   Navigation,
-  ArrowLeft,
+  Map,
   Info,
-  Eye,
-  Clock,
-  Heart,
-  Map
+  LocateFixed
 } from 'lucide-react'
+
+import api from '../services/api'
 import '../App.css'
 
 function RiskMap() {
-  const [location, setLocation] = useState('')
-  const [searchedLocation, setSearchedLocation] = useState('')
+  const [cells, setCells] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [location, setLocation] = useState(null)
+  const [locationError, setLocationError] = useState('')
 
-  function handleSearch(e) {
-    e.preventDefault()
+  const fetchRiskCells = async () => {
+    try {
+      setLoading(true)
+      setError('')
 
-    if (!location.trim()) {
-      alert('Please enter a location')
+      const response = await api.get('/grid-cells')
+
+      setCells(Array.isArray(response.data) ? response.data : [])
+    } catch (err) {
+      console.error('Risk Map Error:', err)
+      setError('Unable to load risk map data. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchRiskCells()
+  }, [])
+
+  const getMyLocation = () => {
+    setLocationError('')
+
+    if (!navigator.geolocation) {
+      setLocationError('Location is not supported by this browser.')
       return
     }
 
-    setSearchedLocation(location.trim())
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        })
+      },
+      () => {
+        setLocationError(
+          'Unable to access location. Please allow location permission.'
+        )
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000
+      }
+    )
   }
 
+  const getRiskLevel = (score) => {
+    if (score === null || score === undefined) return 'Unknown'
+
+    if (score < 30) return 'Low'
+    if (score < 60) return 'Medium'
+    return 'High'
+  }
+
+  const getRiskColor = (level) => {
+    if (level === 'Low') return '#16a34a'
+    if (level === 'Medium') return '#d97706'
+    if (level === 'High') return '#dc2626'
+    return '#64748b'
+  }
+
+  const lowCount = cells.filter(
+    cell => getRiskLevel(cell.riskScore) === 'Low'
+  ).length
+
+  const mediumCount = cells.filter(
+    cell => getRiskLevel(cell.riskScore) === 'Medium'
+  ).length
+
+  const highCount = cells.filter(
+    cell => getRiskLevel(cell.riskScore) === 'High'
+  ).length
+
+  const mapUrl = location
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${location.longitude - 0.02}%2C${location.latitude - 0.02}%2C${location.longitude + 0.02}%2C${location.latitude + 0.02}&layer=mapnik&marker=${location.latitude}%2C${location.longitude}`
+    : null
+
   return (
-    <div className="rm-page">
+    <div style={styles.page}>
 
-      {/* Navbar */}
-      <nav className="rm-navbar">
+      <div style={styles.header}>
+        <div>
+          <h1 style={styles.heading}>
+            <MapPin size={27} /> Safety Risk Map
+          </h1>
 
-        <a href="/dashboard" className="rm-brand">
-          <div className="rm-brand-icon">
-            <ShieldCheck size={25} />
-          </div>
-          <span>SafeHer</span>
-        </a>
-
-        <div className="rm-nav-right">
-
-          <a href="/dashboard" className="rm-dashboard-link">
-            <ArrowLeft size={17} />
-            Dashboard
-          </a>
-
-          <button
-            className="rm-logout-btn"
-            onClick={() => {
-              sessionStorage.removeItem('safeherAccessToken')
-              sessionStorage.removeItem('safeherRefreshToken')
-              sessionStorage.removeItem('safeherUserId')
-              sessionStorage.removeItem('safeherUserName')
-              sessionStorage.removeItem('safeherPhoneNumber')
-              window.location.href = '/login'
-            }}
-          >
-            Logout
-          </button>
-
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section className="rm-hero">
-
-        <div className="rm-hero-content">
-
-          <div className="rm-small-label">
-            <MapPin size={15} />
-            LOCATION AWARENESS
-          </div>
-
-          <h1>Safety Risk Map</h1>
-
-          <p>
-            Explore location safety awareness and understand
-            different risk levels before planning your journey.
+          <p style={styles.subtitle}>
+            Explore available safety risk information in your area.
           </p>
-
-          <div className="rm-hero-note">
-            <ShieldCheck size={18} />
-            <span>Stay aware. Stay alert. Stay safe.</span>
-          </div>
-
         </div>
 
-        <div className="rm-hero-art">
-          <div className="rm-map-circle">
-            <Map size={65} strokeWidth={1.4} />
-            <span><MapPin size={25} /></span>
-          </div>
-        </div>
+        <button
+          onClick={fetchRiskCells}
+          style={styles.refreshButton}
+        >
+          <RefreshCw size={17} />
+          Refresh
+        </button>
+      </div>
 
-      </section>
+      <div style={styles.infoBox}>
+        <Info size={20} />
 
-      {/* Main Content */}
-      <main className="rm-main">
+        <span>
+          Risk information is based on data available in the system.
+          An empty result means that no risk-cell data is currently available.
+        </span>
+      </div>
 
-        {/* Search Card */}
-        <section className="rm-search-card">
+      <div style={styles.locationCard}>
+        <div>
+          <h3 style={styles.cardHeading}>
+            <Navigation size={19} /> Your Current Location
+          </h3>
 
-          <div className="rm-section-heading">
-
-            <div className="rm-heading-icon">
-              <Search size={23} />
-            </div>
-
-            <div>
-              <h2>Search Location</h2>
-              <p>Enter a location to explore its safety information.</p>
-            </div>
-
-          </div>
-
-          <form onSubmit={handleSearch} className="rm-search-form">
-
-            <label htmlFor="riskLocation">Enter Location</label>
-
-            <div className="rm-search-input">
-              <MapPin size={19} />
-
-              <input
-                id="riskLocation"
-                type="text"
-                placeholder="Example: Kothrud, Pune"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-              />
-
-            </div>
-
-            <button type="submit" className="rm-search-btn">
-              <Search size={18} />
-              Search Location
-            </button>
-
-          </form>
-
-          {/* Search Result */}
-          {searchedLocation && (
-
-            <div className="rm-result-card">
-
-              <div className="rm-result-icon">
-                <MapPin size={23} />
-              </div>
-
-              <div className="rm-result-content">
-                <span>LOCATION SEARCHED</span>
-                <h3>{searchedLocation}</h3>
-                <p>
-                  Your location search was completed.
-                  Verified safety information is not available yet.
-                </p>
-              </div>
-
-              <div className="rm-result-status">
-                <Info size={17} />
-                <span>Demo Result</span>
-              </div>
-
-            </div>
-
+          {location ? (
+            <p style={styles.locationText}>
+              Latitude: {location.latitude.toFixed(5)}
+              <br />
+              Longitude: {location.longitude.toFixed(5)}
+            </p>
+          ) : (
+            <p style={styles.locationText}>
+              Allow location access to view your location on the map.
+            </p>
           )}
 
-        </section>
-
-        {/* Risk Categories */}
-        <section className="rm-risk-section">
-
-          <div className="rm-section-title">
-            <div>
-              <h2>Location Safety Levels</h2>
-              <p>Understand the different safety risk categories.</p>
-            </div>
-
-            <div className="rm-info-label">
-              <Info size={16} />
-              Risk Guide
-            </div>
-          </div>
-
-          <div className="rm-risk-grid">
-
-            {/* Low Risk */}
-            <div className="rm-risk-card rm-low">
-
-              <div className="rm-risk-icon">
-                <SafeIcon size={27} />
-              </div>
-
-              <div className="rm-risk-label">
-                LOW RISK
-              </div>
-
-              <h3>Low Risk Area</h3>
-
-              <p>
-                Areas identified with fewer reported safety concerns.
-                Continue following normal safety precautions.
-              </p>
-
-              <div className="rm-risk-bottom">
-                <ShieldCheck size={16} />
-                <span>Remain aware</span>
-              </div>
-
-            </div>
-
-            {/* Medium Risk */}
-            <div className="rm-risk-card rm-medium">
-
-              <div className="rm-risk-icon">
-                <Eye size={27} />
-              </div>
-
-              <div className="rm-risk-label">
-                MEDIUM RISK
-              </div>
-
-              <h3>Medium Risk Area</h3>
-
-              <p>
-                Areas where extra awareness may be helpful.
-                Prefer familiar and well-lit routes.
-              </p>
-
-              <div className="rm-risk-bottom">
-                <Eye size={16} />
-                <span>Stay alert</span>
-              </div>
-
-            </div>
-
-            {/* High Risk */}
-            <div className="rm-risk-card rm-high">
-
-              <div className="rm-risk-icon">
-                <AlertTriangle size={27} />
-              </div>
-
-              <div className="rm-risk-label">
-                HIGH RISK
-              </div>
-
-              <h3>High Risk Area</h3>
-
-              <p>
-                Areas that may require additional caution.
-                Consider safer alternatives when possible.
-              </p>
-
-              <div className="rm-risk-bottom">
-                <AlertTriangle size={16} />
-                <span>Extra caution</span>
-              </div>
-
-            </div>
-
-          </div>
-
-          <div className="rm-disclaimer">
-            <Info size={19} />
-            <p>
-              <strong>Important:</strong> These risk categories are
-              for demonstration only. They do not represent actual
-              safety ratings of any location.
-            </p>
-          </div>
-
-        </section>
-
-        {/* Safety Tips */}
-        <section className="rm-tips-section">
-
-          <div className="rm-tips-heading">
-            <div className="rm-heading-icon">
-              <Heart size={23} />
-            </div>
-
-            <div>
-              <h2>Smart Safety Tips</h2>
-              <p>Simple precautions for safer travel.</p>
-            </div>
-          </div>
-
-          <div className="rm-tips-grid">
-
-            <div className="rm-tip-card">
-              <div className="rm-tip-icon">
-                <Navigation size={21} />
-              </div>
-              <div>
-                <h3>Choose Familiar Routes</h3>
-                <p>Prefer routes you know and areas with public activity.</p>
-              </div>
-            </div>
-
-            <div className="rm-tip-card">
-              <div className="rm-tip-icon">
-                <Clock size={21} />
-              </div>
-              <div>
-                <h3>Prefer Well-Lit Areas</h3>
-                <p>Use properly lit streets, especially during late hours.</p>
-              </div>
-            </div>
-
-            <div className="rm-tip-card">
-              <div className="rm-tip-icon">
-                <Heart size={21} />
-              </div>
-              <div>
-                <h3>Inform Trusted Contacts</h3>
-                <p>Share your travel plans with someone you trust.</p>
-              </div>
-            </div>
-
-          </div>
-
-        </section>
-
-        {/* Emergency Note */}
-        <div className="rm-emergency-note">
-
-          <div className="rm-emergency-icon">
-            <AlertTriangle size={23} />
-          </div>
-
-          <div>
-            <h3>Need Immediate Help?</h3>
-            <p>
-              If you are in immediate danger, move to a safer place
-              if possible and contact emergency services.
-              In India, call 112 for emergency assistance.
-            </p>
-          </div>
-
+          {locationError && (
+            <p style={styles.errorText}>{locationError}</p>
+          )}
         </div>
 
-      </main>
+        <button
+          onClick={getMyLocation}
+          style={styles.locationButton}
+        >
+          <LocateFixed size={17} />
+          Use My Location
+        </button>
+      </div>
 
-      {/* Footer */}
-      <footer className="rm-footer">
+      <div style={styles.mapCard}>
+        <h3 style={styles.cardHeading}>
+          <Map size={20} /> Map View
+        </h3>
 
-        <div className="rm-footer-brand">
-          <ShieldCheck size={21} />
-          <span>SafeHer</span>
+        {location && mapUrl ? (
+          <iframe
+            title="OpenStreetMap"
+            src={mapUrl}
+            width="100%"
+            height="380"
+            style={styles.mapFrame}
+            loading="lazy"
+          />
+        ) : (
+          <div style={styles.mapPlaceholder}>
+            <MapPin size={42} />
+            <h3>Location Not Selected</h3>
+            <p>Click "Use My Location" to display the map.</p>
+          </div>
+        )}
+      </div>
+
+      <h2 style={styles.sectionHeading}>Risk Overview</h2>
+
+      <div style={styles.statsGrid}>
+        <div style={styles.statCard}>
+          <ShieldCheck color="#16a34a" size={27} />
+          <h2 style={{ ...styles.statNumber, color: '#16a34a' }}>
+            {lowCount}
+          </h2>
+          <p>Low Risk Cells</p>
         </div>
 
-        <p>Stay Safe. Stay Strong. Stay Confident.</p>
-        <span>© 2026 SafeHer. All rights reserved.</span>
+        <div style={styles.statCard}>
+          <AlertTriangle color="#d97706" size={27} />
+          <h2 style={{ ...styles.statNumber, color: '#d97706' }}>
+            {mediumCount}
+          </h2>
+          <p>Medium Risk Cells</p>
+        </div>
 
-      </footer>
+        <div style={styles.statCard}>
+          <AlertTriangle color="#dc2626" size={27} />
+          <h2 style={{ ...styles.statNumber, color: '#dc2626' }}>
+            {highCount}
+          </h2>
+          <p>High Risk Cells</p>
+        </div>
+      </div>
+
+      <h2 style={styles.sectionHeading}>Available Risk Cells</h2>
+
+      {loading ? (
+        <p style={styles.message}>Loading risk information...</p>
+      ) : error ? (
+        <div style={styles.errorBox}>
+          {error}
+          <button onClick={fetchRiskCells} style={styles.retryButton}>
+            Try Again
+          </button>
+        </div>
+      ) : cells.length === 0 ? (
+        <div style={styles.emptyBox}>
+          <MapPin size={35} color="#64748b" />
+          <h3>No Risk Data Available</h3>
+          <p>
+            No grid cells have been calculated yet.
+            Submit reports with location coordinates and configure
+            risk calculation to populate this section.
+          </p>
+        </div>
+      ) : (
+        <div style={styles.cellList}>
+          {cells.map((cell) => {
+            const level = getRiskLevel(cell.riskScore)
+
+            return (
+              <div key={cell.id} style={styles.cellCard}>
+                <div>
+                  <h3 style={styles.cellTitle}>
+                    Grid Cell: {cell.geohashCell}
+                  </h3>
+
+                  <p style={styles.cellText}>
+                    Risk Score:{' '}
+                    {cell.riskScore ?? 'Not calculated'}
+                  </p>
+
+                  <p style={styles.cellText}>
+                    Last Updated:{' '}
+                    {cell.lastCalculatedAt
+                      ? new Date(cell.lastCalculatedAt).toLocaleString()
+                      : 'Not available'}
+                  </p>
+                </div>
+
+                <span
+                  style={{
+                    ...styles.riskBadge,
+                    backgroundColor: getRiskColor(level)
+                  }}
+                >
+                  {level} Risk
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div style={styles.safetyNote}>
+        <ShieldCheck size={21} />
+        <div>
+          <strong>Safety Reminder</strong>
+          <p>
+            This map is an informational tool, not a guarantee of safety.
+            For emergencies in India, call 112.
+          </p>
+        </div>
+      </div>
 
     </div>
   )
+}
+
+const styles = {
+  page: {
+    padding: '25px',
+    color: '#1e293b',
+    maxWidth: '1200px',
+    margin: '0 auto'
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '15px',
+    marginBottom: '22px'
+  },
+  heading: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    fontSize: '27px',
+    margin: '0 0 8px'
+  },
+  subtitle: {
+    color: '#64748b',
+    margin: 0
+  },
+  refreshButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '11px 17px',
+    border: 'none',
+    borderRadius: '8px',
+    background: '#4f46e5',
+    color: 'white',
+    cursor: 'pointer'
+  },
+  infoBox: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '12px',
+    background: '#eef2ff',
+    color: '#3730a3',
+    padding: '15px',
+    borderRadius: '10px',
+    marginBottom: '20px'
+  },
+  locationCard: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '15px',
+    background: 'white',
+    padding: '20px',
+    borderRadius: '12px',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+    marginBottom: '20px'
+  },
+  cardHeading: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '9px',
+    margin: '0 0 12px',
+    fontSize: '19px'
+  },
+  locationText: {
+    color: '#64748b',
+    lineHeight: '1.7',
+    margin: 0
+  },
+  locationButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    background: '#4f46e5',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '12px 17px',
+    cursor: 'pointer'
+  },
+  mapCard: {
+    background: 'white',
+    padding: '20px',
+    borderRadius: '12px',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+    marginBottom: '25px'
+  },
+  mapFrame: {
+    border: 'none',
+    borderRadius: '10px'
+  },
+  mapPlaceholder: {
+    height: '300px',
+    background: '#f1f5f9',
+    borderRadius: '10px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#64748b',
+    textAlign: 'center'
+  },
+  sectionHeading: {
+    fontSize: '21px',
+    margin: '25px 0 15px'
+  },
+  statsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+    gap: '15px'
+  },
+  statCard: {
+    background: 'white',
+    padding: '20px',
+    borderRadius: '12px',
+    textAlign: 'center',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.06)'
+  },
+  statNumber: {
+    fontSize: '30px',
+    margin: '10px 0 5px'
+  },
+  message: {
+    color: '#64748b',
+    padding: '20px'
+  },
+  emptyBox: {
+    background: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    padding: '30px',
+    borderRadius: '12px',
+    textAlign: 'center',
+    color: '#64748b'
+  },
+  cellList: {
+    display: 'grid',
+    gap: '12px'
+  },
+  cellCard: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '12px',
+    background: 'white',
+    padding: '18px',
+    borderRadius: '10px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+  },
+  cellTitle: {
+    margin: '0 0 8px',
+    fontSize: '16px'
+  },
+  cellText: {
+    color: '#64748b',
+    fontSize: '13px',
+    margin: '5px 0'
+  },
+  riskBadge: {
+    color: 'white',
+    padding: '7px 13px',
+    borderRadius: '20px',
+    fontSize: '13px',
+    fontWeight: 'bold'
+  },
+  safetyNote: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '12px',
+    background: '#f0fdf4',
+    color: '#166534',
+    padding: '17px',
+    borderRadius: '10px',
+    marginTop: '25px'
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: '13px'
+  },
+  errorBox: {
+    background: '#fef2f2',
+    color: '#b91c1c',
+    padding: '20px',
+    borderRadius: '10px'
+  },
+  retryButton: {
+    marginLeft: '12px',
+    padding: '8px 12px',
+    cursor: 'pointer'
+  }
 }
 
 export default RiskMap

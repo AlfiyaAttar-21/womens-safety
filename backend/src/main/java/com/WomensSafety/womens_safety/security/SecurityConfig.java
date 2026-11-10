@@ -33,7 +33,7 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // CORS configuration for React frontend
+    // CORS configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
@@ -41,7 +41,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
-                "http://localhost:5173"
+                "http://localhost:5183"
         ));
 
         configuration.setAllowedMethods(List.of(
@@ -68,13 +68,9 @@ public class SecurityConfig {
 
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
             .csrf(csrf -> csrf.disable())
-
             .httpBasic(basic -> basic.disable())
-
             .formLogin(form -> form.disable())
-
             .logout(logout -> logout.disable())
 
             .sessionManagement(session ->
@@ -89,7 +85,7 @@ public class SecurityConfig {
 
             .authorizeHttpRequests(auth -> auth
 
-                    // Public authentication endpoints
+                    // Public authentication APIs
                     .requestMatchers(
                             "/api/users/register",
                             "/api/users/verify-otp",
@@ -98,19 +94,30 @@ public class SecurityConfig {
                             "/api/users/refresh"
                     ).permitAll()
 
-                    // Public tracking link
+                    // Public tracking APIs
                     .requestMatchers(
                             "/api/tracking/public/**",
                             "/api/sos/track/**"
                     ).permitAll()
 
-                    // WebSocket handshake
+                    // Public Risk Map APIs
+                    .requestMatchers(
+                            "/api/grid-cells",
+                            "/api/grid-cells/**"
+                    ).permitAll()
+
+                    // Public trusted contact consent APIs
+                    .requestMatchers(
+                            "/api/contacts/consent/**"
+                    ).permitAll()
+
+                    // WebSocket
                     .requestMatchers("/ws/**").permitAll()
 
-                    // Admin-only APIs
+                    // Admin APIs
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                    // Every other API requires JWT authentication
+                    // Other APIs require authentication
                     .anyRequest().authenticated()
             )
 

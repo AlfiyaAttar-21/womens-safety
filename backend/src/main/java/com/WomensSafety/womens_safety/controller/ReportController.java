@@ -1,15 +1,17 @@
+
 package com.WomensSafety.womens_safety.controller;
 
 import com.WomensSafety.womens_safety.entity.Report;
 import com.WomensSafety.womens_safety.entity.User;
-import com.WomensSafety.womens_safety.repository.ReportRepository;
-import com.WomensSafety.womens_safety.repository.UserRepository;
+import com.WomensSafety.womens_safety.service.ReportService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -17,28 +19,56 @@ import java.util.Optional;
 public class ReportController {
 
     @Autowired
-    private ReportRepository reportRepository;
+    private ReportService reportService;
 
-    @Autowired
-    private UserRepository userRepository;
+    private Long getUserId(Authentication auth) {
+        Object principal = auth.getPrincipal();
 
-    // File an incident report (supports optional anonymous reporting)[cite: 5]
-    @PostMapping
-    public ResponseEntity<Report> createReport(@RequestBody Report report, @RequestParam(required = false) Long userId) {
-        if (userId != null) {
-            Optional<User> userOpt = userRepository.findById(userId);
-            userOpt.ifPresent(report::setUser);
+        if (principal instanceof User) {
+            User user = (User) principal;
+            return user.getId();
         }
 
-        // TODO: Send report text asynchronously to Google Gemini API for severity analysis[cite: 5, 8]
-        Report savedReport = reportRepository.save(report);
+        throw new RuntimeException("Authenticated user not found");
+    }
+
+    @PostMapping
+    public ResponseEntity<Report> createReport(
+            Authentication auth,
+            @RequestBody Report report) {
+
+        Report savedReport = reportService.createReport(
+                report, getUserId(auth));
+
         return ResponseEntity.ok(savedReport);
     }
 
-    // Get reports by geohash cell for map views
-    @GetMapping("/geohash/{geohash}")
-    public ResponseEntity<List<Report>> getReportsByGeohash(@PathVariable String geohash) {
-        List<Report> reports = reportRepository.findByGeohash(geohash);
+    @GetMapping("/my")
+    public ResponseEntity<List<Report>> getMyReports(
+            Authentication auth) {
+
+        List<Report> reports =
+                reportService.getReportsByUser(getUserId(auth));
+
         return ResponseEntity.ok(reports);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> deleteReport(
+            Authentication auth,
+            @PathVariable Long id) {
+
+        reportService.deleteReport(id, getUserId(auth));
+
+        return ResponseEntity.ok(
+                Map.of("message", "Report deleted successfully"));
+    }
+
+    @GetMapping("/geohash/{geohash}")
+    public ResponseEntity<List<Report>> getReportsByGeohash(
+            @PathVariable String geohash) {
+
+        return ResponseEntity.ok(
+                reportService.getReportsByGeohash(geohash));
     }
 }

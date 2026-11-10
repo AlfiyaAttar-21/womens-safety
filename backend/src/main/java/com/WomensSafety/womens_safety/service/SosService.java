@@ -98,6 +98,32 @@ public class SosService {
                 .findFirstByUserIdAndStateNotAndFakeResolvedFalseOrderByCreatedAtDesc(userId, AlertState.RESOLVED)
                 .map(AlertResponse::from);
     }
+    
+
+    // Verify Normal PIN before showing SOS controls
+    @Transactional(readOnly = true)
+    public void verifyNormalPin(Long userId, String pin) {
+
+        User user = findUser(userId);
+
+        if (pin == null || pin.trim().isEmpty()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "PIN is required"
+            );
+        }
+        String normalPinHash = user.getNormalPinHash();
+
+        if (normalPinHash == null ||
+                !passwordEncoder.matches(pin.trim(), normalPinHash)) {
+
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Incorrect normal PIN"
+            );
+        }
+    }
+
 
     @Transactional(readOnly = true)
     public List<AlertResponse> history(Long userId) {

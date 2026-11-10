@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import api from '../services/api'
 
 import {
@@ -16,38 +16,292 @@ import {
   ShieldCheck,
   AlertTriangle,
   Clock,
-  ArrowUpRight
+  ArrowUpRight,
+  X,
+  CheckCircle
 } from 'lucide-react'
 
 function Dashboard() {
-
   const [userName, setUserName] = useState(
     sessionStorage.getItem('safeherUserName') || 'SafeHer User'
   )
 
   const [loading, setLoading] = useState(true)
+  const [countdown, setCountdown] = useState(null)
+  const [activeAlert, setActiveAlert] = useState(null)
+  const [sosLoading, setSosLoading] = useState(false)
+  const [pinLoading, setPinLoading] = useState(false)
+  const [pinVerified, setPinVerified] = useState(false)
+  const [sosMessage, setSosMessage] = useState('')
+  const [sosError, setSosError] = useState('')
 
+  const countdownRef = useRef(null)
+
+  // Fetch active SOS alert
+  const fetchActiveAlert = async () => {
+    try {
+      const response = await api.get('/sos/active')
+
+      console.log('ACTIVE SOS RESPONSE:', response.data)
+
+      if (response.data && response.data.id) {
+        setActiveAlert(response.data)
+        setPinVerified(false)
+        return response.data
+      }
+
+      setActiveAlert(null)
+      return null
+    } catch (error) {
+      if (error.response?.status === 204) {
+        setActiveAlert(null)
+        return null
+      }
+
+      console.error('Active SOS fetch failed:', error)
+      setActiveAlert(null)
+      return null
+    }
+  }
+
+  // Load user and active SOS
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchData = async () => {
       try {
         const response = await api.get('/users/me')
 
-        if (response.data.userId) {
-          setUserName(
-            sessionStorage.getItem('safeherUserName') || 'SafeHer User'
-          )
-        }
+        console.log('USER RESPONSE:', response.data)
 
+        setUserName(
+          sessionStorage.getItem('safeherUserName') || 'SafeHer User'
+        )
       } catch (error) {
-        console.error('Dashboard user verification failed:', error)
-      } finally {
-        setLoading(false)
+        console.error('User verification failed:', error)
       }
+
+      await fetchActiveAlert()
+      setLoading(false)
     }
 
-    fetchUser()
+    fetchData()
+
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current)
+        countdownRef.current = null
+      }
+    }
   }, [])
 
+  // Verify Normal PIN before showing SOS buttons
+  const handleVerifyNormalPin = async () => {
+    const pin = window.prompt('Enter your normal safety PIN:')
+
+    if (pin === null || pin.trim() === '') {
+      return
+    }
+
+    setPinLoading(true)
+    setSosError('')
+    setSosMessage('')
+
+    try {
+      const response = await api.post('/sos/verify-pin', {
+        pin: pin.trim()
+      })
+
+      console.log('PIN VERIFICATION RESPONSE:', response.data)
+
+      setPinVerified(true)
+      setSosMessage('Normal PIN verified. You can now use SOS controls.')
+      setSosError('')
+    } catch (error) {
+      console.error('PIN VERIFICATION ERROR:', error)
+
+      setPinVerified(false)
+
+      setSosError(
+        error.response?.data?.message ||
+        'Incorrect PIN. Please try again.'
+      )
+    } finally {
+      setPinLoading(false)
+    }
+  }
+
+  // Get current GPS location
+  const getCurrentLocation = () => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        console.log('GPS not supported')
+        resolve(null)
+        return
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          console.log('GPS LOCATION RECEIVED')
+
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          })
+        },
+        (error) => {
+          console.error('GPS ERROR:', error.message)
+          resolve(null)
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      )
+    })
+  }
+
+  // Send actual SOS request
+  const sendSOS = async () => {
+    console.log('SOS API FUNCTION CALLED')
+
+    setSosLoading(true)
+    setSosError('')
+    setSosMessage('Sending emergency alert...')
+
+    try {
+      const location = await getCurrentLocation()
+
+      console.log('SOS LOCATION:', location)
+
+      const response = await api.post(
+        '/sos/trigger',
+        location || {}
+      )
+
+      console.log('SOS API RESPONSE:', response.data)
+
+      setActiveAlert(response.data)
+      setPinVerified(false)
+
+      setSosMessage(
+        'SOS alert triggered successfully. Alert ID: ' +
+        response.data.id
+      )
+    } catch (error) {
+      console.error('SOS API ERROR:', error)
+
+      setSosMessage('')
+
+      setSosError(
+        error.response?.data?.message ||
+        error.message ||
+        'Unable to trigger SOS. Please try again.'
+      )
+    } finally {
+      setSosLoading(false)
+    }
+  }
+
+  // Start 5-second countdown
+  const handleSOS = () => {
+    console.log('SOS BUTTON CLICKED')
+
+    if (!pinVerified || activeAlert || sosLoading || countdown !== null) {
+      return
+    }
+
+    setSosError('')
+    setSosMessage('SOS will be triggered in 5 seconds.')
+
+    let remaining = 5
+
+    setCountdown(remaining)
+
+    countdownRef.current = setInterval(() => {
+      remaining--
+
+      console.log('SOS COUNTDOWN:', remaining)
+
+      if (remaining <= 0) {
+        clearInterval(countdownRef.current)
+        countdownRef.current = null
+
+        setCountdown(null)
+
+        sendSOS()
+      } else {
+        setCountdown(remaining)
+      }
+    }, 1000)
+  }
+
+  // Cancel SOS before countdown finishes
+  const cancelSOS = () => {
+    console.log('SOS CANCELLED')
+
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current)
+      countdownRef.current = null
+    }
+
+    setCountdown(null)
+    setPinVerified(false)
+    setSosMessage('SOS countdown cancelled. No alert was triggered.')
+    setSosError('')
+  }
+
+  // Resolve active SOS using Normal PIN or Duress PIN
+  const handleResolveSOS = async () => {
+    console.log('RESOLVE SOS BUTTON CLICKED')
+
+    setSosError('')
+    setSosMessage('')
+
+    let alertToResolve = activeAlert
+
+    if (!alertToResolve) {
+      alertToResolve = await fetchActiveAlert()
+    }
+
+    if (!alertToResolve || !alertToResolve.id) {
+      setSosMessage('No active SOS alert found.')
+      return
+    }
+
+    const pin = window.prompt('Enter your safety PIN:')
+
+    if (pin === null || pin.trim() === '') {
+      return
+    }
+
+    setPinLoading(true)
+
+    try {
+      const response = await api.post(
+        `/sos/${alertToResolve.id}/resolve`,
+        { pin: pin.trim() }
+      )
+
+      console.log('SOS RESOLVE RESPONSE:', response.data)
+
+      setActiveAlert(null)
+      setPinVerified(false)
+
+      setSosMessage('Your alert has been resolved successfully.')
+      setSosError('')
+    } catch (error) {
+      console.error('SOS RESOLVE ERROR:', error)
+
+      setSosError(
+        error.response?.data?.message ||
+        'Unable to resolve alert. Check your PIN.'
+      )
+    } finally {
+      setPinLoading(false)
+    }
+  }
+
+  // Dashboard services
   const services = [
     {
       title: 'Trusted Contacts',
@@ -87,11 +341,18 @@ function Dashboard() {
     }
   ]
 
+  // Open page
   const openPage = (link) => {
     window.location.href = link
   }
 
+  // Logout
   const handleLogout = () => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current)
+      countdownRef.current = null
+    }
+
     sessionStorage.removeItem('safeherAccessToken')
     sessionStorage.removeItem('safeherRefreshToken')
     sessionStorage.removeItem('safeherUserId')
@@ -118,7 +379,6 @@ function Dashboard() {
         </div>
 
         <div className="px-4 mt-6">
-
           <p className="text-xs font-semibold text-[#6b6550] uppercase mb-4 px-3">
             Main Menu
           </p>
@@ -148,11 +408,9 @@ function Dashboard() {
               </button>
             )
           })}
-
         </div>
 
         <div className="mt-auto p-4 border-t border-[#d9cfb0]">
-
           <button
             onClick={() => openPage('/my-profile')}
             className="w-full flex items-center gap-3 px-4 py-3 text-[#6b6550] hover:bg-[#e7dbbf] rounded-xl"
@@ -168,15 +426,13 @@ function Dashboard() {
             <LogOut size={20} />
             Logout
           </button>
-
         </div>
-
       </aside>
 
       {/* Main Content */}
       <main className="ml-64 flex-1 p-8">
 
-        {/* Top Header */}
+        {/* Header */}
         <header className="flex justify-between items-center mb-8">
 
           <div>
@@ -214,16 +470,13 @@ function Dashboard() {
                 </p>
               </div>
             </button>
-
           </div>
-
         </header>
 
         {/* Welcome Banner */}
         <section className="bg-gradient-to-r from-[#6b7a3a] to-[#8d9d4f] rounded-2xl p-8 text-white mb-8 relative overflow-hidden">
 
           <div className="relative z-10">
-
             <p className="text-[#f0ead6] text-sm font-medium mb-2">
               YOUR SAFETY MATTERS
             </p>
@@ -236,14 +489,12 @@ function Dashboard() {
               Your personal safety companion is here to help you
               stay protected, connected and confident.
             </p>
-
           </div>
 
           <ShieldCheck
             size={150}
             className="absolute right-10 top-5 text-white opacity-10"
           />
-
         </section>
 
         {/* Emergency SOS */}
@@ -264,17 +515,113 @@ function Dashboard() {
                 Need help? Emergency support is important.
               </p>
             </div>
+          </div>
+
+          {/* Active SOS Details */}
+          {activeAlert && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-5 mb-4">
+
+              <div className="flex items-center gap-2 text-red-700 font-bold mb-2">
+                <AlertTriangle size={20} />
+                Active SOS Alert
+              </div>
+
+              <p className="text-sm text-red-700 mb-2">
+                Alert ID: {activeAlert.id}
+              </p>
+
+              <p className="text-sm text-red-700">
+                Status: {activeAlert.state}
+              </p>
+            </div>
+          )}
+
+          {/* SOS and PIN Buttons */}
+          <div className="flex flex-wrap items-center gap-3">
+
+            {/* Initial Green PIN Button */}
+            {!activeAlert && !pinVerified && (
+              <button
+                type="button"
+                onClick={handleVerifyNormalPin}
+                disabled={pinLoading}
+                className="bg-green-700 hover:bg-green-800 text-white font-bold px-8 py-3 rounded-xl transition disabled:opacity-50"
+              >
+                {pinLoading ? 'Verifying PIN...' : 'Enter Normal PIN'}
+              </button>
+            )}
+
+            {/* Show SOS and Cancel after PIN verification */}
+            {!activeAlert && pinVerified && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSOS}
+                  disabled={sosLoading || countdown !== null}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-3 rounded-xl transition disabled:opacity-50"
+                >
+                  {sosLoading ? 'Sending SOS...' : 'SOS Emergency'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={cancelSOS}
+                  disabled={sosLoading}
+                  className="bg-gray-700 hover:bg-gray-800 text-white font-bold px-8 py-3 rounded-xl transition disabled:opacity-50"
+                >
+                  <span className="flex items-center gap-2">
+                    <X size={18} />
+                    {countdown !== null
+                      ? `Cancel SOS (${countdown})`
+                      : 'Cancel SOS'}
+                  </span>
+                </button>
+              </>
+            )}
+
+            {/* Resolve button when alert is active */}
+            {activeAlert && (
+              <button
+                type="button"
+                onClick={handleResolveSOS}
+                disabled={pinLoading}
+                className="bg-green-700 hover:bg-green-800 text-white font-bold px-8 py-3 rounded-xl transition disabled:opacity-50"
+              >
+                {pinLoading ? 'Verifying PIN...' : 'Resolve Alert with PIN'}
+              </button>
+            )}
 
           </div>
 
-          <button className="bg-red-600 hover:bg-red-700 text-white font-bold px-10 py-3 rounded-xl transition">
-            SOS Emergency
-          </button>
+          {countdown !== null && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mt-4">
+              <p className="text-lg font-bold text-red-700">
+                SOS will be triggered in {countdown} seconds.
+              </p>
+
+              <p className="text-sm text-red-700 mt-1">
+                If this was accidental, click Cancel SOS immediately.
+              </p>
+            </div>
+          )}
+
+          {sosMessage && (
+            <p className="text-sm text-green-700 font-semibold mt-3 flex items-center gap-2">
+              <CheckCircle size={17} />
+              {sosMessage}
+            </p>
+          )}
+
+          {sosError && (
+            <p className="text-sm text-red-700 font-semibold mt-3 flex items-center gap-2">
+              <X size={17} />
+              {sosError}
+            </p>
+          )}
 
           <p className="text-xs text-[#6b6550] mt-3">
-            SOS is currently a UI button. Emergency alert functionality will be connected separately.
+            An SOS alert may send an emergency SMS to your confirmed trusted contacts.
           </p>
-
         </section>
 
         {/* Services */}
@@ -295,7 +642,6 @@ function Dashboard() {
             <span className="text-sm text-[#6b7a3a] font-semibold">
               6 Services
             </span>
-
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -316,8 +662,7 @@ function Dashboard() {
                       <Icon size={24} />
                     </div>
 
-                    <ArrowUpRight size={20} className="text-[#8a7e65]" />
-
+                    <ArrowUpRight size={20} className="text-[#8a7e65}" />
                   </div>
 
                   <h3 className="font-bold text-[#2c2a1e] text-lg mb-2">
@@ -331,13 +676,10 @@ function Dashboard() {
                   <span className="text-sm font-semibold text-[#6b7a3a]">
                     Open Service →
                   </span>
-
                 </div>
               )
             })}
-
           </div>
-
         </section>
 
         {/* Footer */}
@@ -349,11 +691,9 @@ function Dashboard() {
             <Clock size={15} />
             Stay Safe. Stay Confident.
           </p>
-
         </footer>
 
       </main>
-
     </div>
   )
 }

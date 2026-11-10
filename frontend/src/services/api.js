@@ -1,4 +1,3 @@
-
 import axios from 'axios'
 
 const api = axios.create({
@@ -8,20 +7,25 @@ const api = axios.create({
   }
 })
 
-// Automatically attach access token to API requests
 api.interceptors.request.use(
   (config) => {
     const token = sessionStorage.getItem('safeherAccessToken')
+
+    console.log('API REQUEST:', config.url)
+    console.log('TOKEN EXISTS:', !!token)
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
 
+    console.log(
+      'AUTHORIZATION HEADER EXISTS:',
+      !!config.headers.Authorization
+    )
+
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
 export default api

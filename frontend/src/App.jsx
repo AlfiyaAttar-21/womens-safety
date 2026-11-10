@@ -1,4 +1,6 @@
+
 import './App.css'
+
 import Login from './Pages/Login'
 import Register from './Pages/Register'
 import Dashboard from './Pages/Dashboard'
@@ -9,62 +11,35 @@ import RiskMap from './Pages/RiskMap'
 import AIChatbot from './Pages/AIChatbot'
 import MyProfile from './Pages/MyProfile'
 import VerifyOTP from './Pages/VerifyOTP'
+import Consent from './Pages/Consent'
+import TrackLocation from './Pages/TrackLocation'
 
 function App() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/'
 
-  // Login Page
-  if (path === '/login') {
-    return <Login />
+  if (path === '/login') return <Login />
+  if (path === '/register') return <Register />
+  if (path === '/dashboard') return <Dashboard />
+  if (path === '/trusted-contacts') return <TrustedContacts />
+  if (path === '/safe-journey') return <SafeJourney />
+  if (path === '/incident-reporting') return <IncidentReporting />
+  if (path === '/risk-map') return <RiskMap />
+  if (path === '/ai-assistant') return <AIChatbot />
+  if (path === '/my-profile') return <MyProfile />
+  if (path === '/verify-otp') return <VerifyOTP />
+
+  // Trusted contact consent page
+  if (path.startsWith('/consent/')) {
+    return <Consent />
   }
 
-  // Register Page
-  if (path === '/register') {
-    return <Register />
+  // Public live tracking page
+  if (path.startsWith('/track/')) {
+    return <TrackLocation />
   }
 
-   // Dashborad Page
-  if (path === '/dashboard') {
-    return <Dashboard />
-  }
-
-   // TrustedContact Page
-  if (path === '/trusted-contacts') {
-    return <TrustedContacts />
-  }
-
-  //SafeJourney Page
-  if (path === '/safe-journey')
-     return <SafeJourney />
-
-//IncidentRepository page
-  if (path === '/incident-reporting') {
-  return <IncidentReporting />
-}
-
-//RiskMap Page
-if (path === '/risk-map') {
-  return <RiskMap />
-}
-
-//AIChatbot
-if (path === '/ai-assistant') {
-  return <AIChatbot />
-}
-
-//MyProfile
-if (path === '/my-profile') {
-  return <MyProfile />
-}
-
-// Verify OTP Page
-if (path === '/verify-otp' || path === '/verify-otp/') {
-  return <VerifyOTP />
-}
   return (
     <div className="app">
-
-      {/* Navigation Bar */}
       <nav className="navbar">
         <div className="logo">
           <span>♡</span> SafeHer
@@ -93,9 +68,7 @@ if (path === '/verify-otp' || path === '/verify-otp/') {
         </div>
       </nav>
 
-      {/* Hero Section */}
       <section className="hero-section" id="home">
-
         <div className="hero-content">
           <span className="welcome-tag">YOUR SAFETY MATTERS</span>
 
@@ -121,7 +94,7 @@ if (path === '/verify-otp' || path === '/verify-otp/') {
             <button
               className="secondary-btn"
               onClick={() => {
-                document.getElementById('features').scrollIntoView({
+                document.getElementById('features')?.scrollIntoView({
                   behavior: 'smooth'
                 })
               }}
@@ -153,10 +126,8 @@ if (path === '/verify-otp' || path === '/verify-otp/') {
             </div>
           </div>
         </div>
-
       </section>
 
-      {/* Features Section */}
       <section className="features" id="features">
         <div className="section-heading">
           <span>WHAT WE OFFER</span>
@@ -165,7 +136,6 @@ if (path === '/verify-otp' || path === '/verify-otp/') {
         </div>
 
         <div className="feature-container">
-
           <div className="feature-card">
             <div className="feature-icon">🚨</div>
             <h3>SOS Emergency</h3>
@@ -201,11 +171,9 @@ if (path === '/verify-otp' || path === '/verify-otp/') {
             <h3>Safety Risk Map</h3>
             <p>Explore safety information about different locations.</p>
           </div>
-
         </div>
       </section>
 
-      {/* About Section */}
       <section className="about-section" id="about">
         <h2>Empowering Women Through Technology</h2>
         <p>
@@ -214,13 +182,11 @@ if (path === '/verify-otp' || path === '/verify-otp/') {
         </p>
       </section>
 
-      {/* Footer */}
       <footer>
         <h2>♡ SafeHer</h2>
         <p>Stay Safe. Stay Strong. Stay Confident.</p>
         <p>© 2026 SafeHer. All rights reserved.</p>
       </footer>
-
     </div>
   )
 }

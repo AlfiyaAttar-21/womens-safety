@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/journeys")
@@ -20,8 +22,8 @@ public class JourneyController {
         this.safeJourneyService = safeJourneyService;
     }
 
-    // Request body for starting a journey
     public static class StartJourneyRequest {
+
         private String destination;
         private LocalDateTime expectedArrivalTime;
 
@@ -43,6 +45,25 @@ public class JourneyController {
         }
     }
 
+    // Convert SafeJourney entity into a safe response
+    private Map<String, Object> journeyResponse(SafeJourney journey) {
+
+        Map<String, Object> response = new LinkedHashMap<>();
+
+        response.put("id", journey.getId());
+        response.put("destination", journey.getDestination());
+        response.put("startTime", journey.getStartTime());
+        response.put("expectedArrivalTime",
+                journey.getExpectedArrivalTime());
+        response.put("lastCheckInTime",
+                journey.getLastCheckInTime());
+        response.put("status", journey.getStatus());
+        response.put("completedAt", journey.getCompletedAt());
+        response.put("sosTriggeredAt", journey.getSosTriggeredAt());
+
+        return response;
+    }
+
     // Start a safe journey
     @PostMapping("/start/{userId}")
     public ResponseEntity<?> startJourney(
@@ -50,17 +71,21 @@ public class JourneyController {
             @RequestBody StartJourneyRequest request) {
 
         try {
+
             SafeJourney journey = safeJourneyService.startJourney(
                     userId,
                     request.getDestination(),
                     request.getExpectedArrivalTime()
             );
 
-            return ResponseEntity.ok(journey);
+            return ResponseEntity.ok(journeyResponse(journey));
 
         } catch (IllegalArgumentException e) {
+
             return ResponseEntity.badRequest().body(e.getMessage());
+
         } catch (RuntimeException e) {
+
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -72,12 +97,14 @@ public class JourneyController {
             @PathVariable Long userId) {
 
         try {
+
             SafeJourney journey =
                     safeJourneyService.checkIn(journeyId, userId);
 
-            return ResponseEntity.ok(journey);
+            return ResponseEntity.ok(journeyResponse(journey));
 
         } catch (RuntimeException e) {
+
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -89,14 +116,15 @@ public class JourneyController {
             @PathVariable Long userId) {
 
         try {
-            SafeJourney journey =
-                    safeJourneyService.completeJourney(journeyId, userId);
+
+            safeJourneyService.completeJourney(journeyId, userId);
 
             return ResponseEntity.ok(
                     "Journey completed successfully."
             );
 
         } catch (RuntimeException e) {
+
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -108,14 +136,15 @@ public class JourneyController {
             @PathVariable Long userId) {
 
         try {
-            SafeJourney journey =
-                    safeJourneyService.cancelJourney(journeyId, userId);
+
+            safeJourneyService.cancelJourney(journeyId, userId);
 
             return ResponseEntity.ok(
                     "Journey cancelled successfully."
             );
 
         } catch (RuntimeException e) {
+
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

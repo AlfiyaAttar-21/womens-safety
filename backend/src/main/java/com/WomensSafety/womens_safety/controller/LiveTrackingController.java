@@ -1,6 +1,8 @@
+
 package com.WomensSafety.womens_safety.controller;
 
 import com.WomensSafety.womens_safety.dto.LocationRequest;
+import com.WomensSafety.womens_safety.entity.User;
 import com.WomensSafety.womens_safety.service.LiveTrackingService;
 
 import jakarta.validation.Valid;
@@ -21,11 +23,16 @@ public class LiveTrackingController {
         this.trackingService = trackingService;
     }
 
+    private Long getUserId(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        return user.getId();
+    }
+
     @PostMapping("/start")
     public ResponseEntity<Map<String, String>> start(
             Authentication authentication) {
 
-        Long userId = (Long) authentication.getPrincipal();
+        Long userId = getUserId(authentication);
 
         return ResponseEntity.ok(
                 trackingService.startTracking(userId));
@@ -36,7 +43,7 @@ public class LiveTrackingController {
             Authentication authentication,
             @Valid @RequestBody LocationRequest request) {
 
-        Long userId = (Long) authentication.getPrincipal();
+        Long userId = getUserId(authentication);
 
         trackingService.updateLocation(userId, request);
 
@@ -56,7 +63,7 @@ public class LiveTrackingController {
     public ResponseEntity<Map<String, String>> stop(
             Authentication authentication) {
 
-        Long userId = (Long) authentication.getPrincipal();
+        Long userId = getUserId(authentication);
 
         trackingService.stopTracking(userId);
 
