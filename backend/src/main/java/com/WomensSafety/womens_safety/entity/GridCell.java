@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Table(name = "grid_cells")
 @Data
 public class GridCell {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -16,6 +17,10 @@ public class GridCell {
     private String geohashCell;
 
     private Double riskScore;
-    
+
+    private Double latitude;
+
+    private Double longitude;
+
     private LocalDateTime lastCalculatedAt = LocalDateTime.now();
 }

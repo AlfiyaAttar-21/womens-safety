@@ -1,12 +1,17 @@
+
 package com.WomensSafety.womens_safety.controller;
 
 import com.WomensSafety.womens_safety.dto.*;
+import com.WomensSafety.womens_safety.entity.User;
 import com.WomensSafety.womens_safety.service.AuthService;
+
 import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.Map;
 
 @RestController
@@ -20,37 +25,68 @@ public class UserController {
         this.authService = authService;
     }
 
+    // User Registration
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest req) {
+    public ResponseEntity<Map<String, String>> register(
+            @Valid @RequestBody RegisterRequest req) {
+
         authService.register(req);
+
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of("message", "Registered. Enter the OTP sent to your phone"));
+                .body(Map.of(
+                        "message",
+                        "Registered. Enter the OTP sent to your phone"
+                ));
     }
 
+    // Verify OTP
     @PostMapping("/verify-otp")
-    public Map<String, String> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
+    public Map<String, String> verifyOtp(
+            @Valid @RequestBody VerifyOtpRequest req) {
+
         authService.verifyOtp(req);
-        return Map.of("message", "Phone verified. You can now log in");
+
+        return Map.of(
+                "message",
+                "Phone verified. You can now log in"
+        );
     }
 
+    // Resend OTP
     @PostMapping("/resend-otp")
-    public Map<String, String> resendOtp(@RequestBody Map<String, String> body) {
+    public Map<String, String> resendOtp(
+            @RequestBody Map<String, String> body) {
+
         authService.resendOtp(body.get("phoneNumber"));
+
         return Map.of("message", "OTP sent");
     }
 
+    // User Login
     @PostMapping("/login")
-    public AuthResponse login(@Valid @RequestBody LoginRequest req) {
+    public AuthResponse login(
+            @Valid @RequestBody LoginRequest req) {
+
         return authService.login(req);
     }
 
+    // Refresh JWT Tokens
     @PostMapping("/refresh")
-    public AuthResponse refresh(@Valid @RequestBody RefreshRequest req) {
+    public AuthResponse refresh(
+            @Valid @RequestBody RefreshRequest req) {
+
         return authService.refresh(req.getRefreshToken());
     }
 
+    // Get Current Logged-in User
     @GetMapping("/me")
-    public Map<String, Object> me(Authentication authentication) {
-        return Map.of("userId", authentication.getPrincipal());
+    public Map<String, Object> me(
+            Authentication authentication) {
+
+        User user = (User) authentication.getPrincipal();
+
+        return Map.of(
+                "userId", user.getId()
+        );
     }
 }

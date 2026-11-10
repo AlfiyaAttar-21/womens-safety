@@ -1,22 +1,23 @@
-
 package com.WomensSafety.womens_safety.security;
+
+import java.util.List;
+
+import com.WomensSafety.womens_safety.security.JwtAuthFilter;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -28,102 +29,109 @@ public class SecurityConfig {
         this.jwtAuthFilter = jwtAuthFilter;
     }
 
+    // Password encryption
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // CORS configuration
+    // CORS configuration for React frontend
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration = new CorsConfiguration();
+        CorsConfiguration config = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "http://localhost:5183"
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5174"
         ));
 
-        configuration.setAllowedMethods(List.of(
-                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
+        config.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "OPTIONS"
         ));
 
-        configuration.setAllowedHeaders(List.of(
-                "Authorization", "Content-Type"
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type"
         ));
 
-        configuration.setExposedHeaders(List.of("Authorization"));
-        configuration.setAllowCredentials(true);
+        config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", config);
 
         return source;
     }
 
+    // Spring Security configuration
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+            throws Exception {
 
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .cors(Customizer.withDefaults())
+
             .csrf(csrf -> csrf.disable())
+
             .httpBasic(basic -> basic.disable())
+
             .formLogin(form -> form.disable())
+
             .logout(logout -> logout.disable())
 
             .sessionManagement(session ->
-                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                session.sessionCreationPolicy(
+                    SessionCreationPolicy.STATELESS
+                )
             )
 
             .exceptionHandling(exception ->
-                    exception.authenticationEntryPoint(
-                            new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
-                    )
+                exception.authenticationEntryPoint(
+                    (request, response, authException) ->
+                        response.sendError(401, "Unauthorized")
+                )
             )
 
             .authorizeHttpRequests(auth -> auth
 
-                    // Public authentication APIs
-                    .requestMatchers(
-                            "/api/users/register",
-                            "/api/users/verify-otp",
-                            "/api/users/resend-otp",
-                            "/api/users/login",
-                            "/api/users/refresh"
-                    ).permitAll()
+                // CORS preflight requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                    // Public tracking APIs
-                    .requestMatchers(
-                            "/api/tracking/public/**",
-                            "/api/sos/track/**"
-                    ).permitAll()
+                // Authentication APIs
+                .requestMatchers(
+                    "/api/users/register",
+                    "/api/users/verify-otp",
+                    "/api/users/resend-otp",
+                    "/api/users/login",
+                    "/api/users/refresh"
+                ).permitAll()
 
-                    // Public Risk Map APIs
-                    .requestMatchers(
-                            "/api/grid-cells",
-                            "/api/grid-cells/**"
-                    ).permitAll()
+                // Consent APIs
+                .requestMatchers(
+                    "/api/contacts/consent/**"
+                ).permitAll()
 
-                    // Public trusted contact consent APIs
-                    .requestMatchers(
-                            "/api/contacts/consent/**"
-                    ).permitAll()
+                // Public tracking APIs
+                .requestMatchers(
+                    "/api/sos/track/**",
+                    "/api/journeys/track/**",
+                    "/api/grid-cells/**"
+                ).permitAll()
 
-                    // WebSocket
-                    .requestMatchers("/ws/**").permitAll()
-
-                    // Admin APIs
-                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                    // Other APIs require authentication
-                    .anyRequest().authenticated()
+                // Other endpoints require JWT authentication
+                .anyRequest().authenticated()
             )
 
+            // JWT authentication filter
             .addFilterBefore(
-                    jwtAuthFilter,
-                    UsernamePasswordAuthenticationFilter.class
+                jwtAuthFilter,
+                UsernamePasswordAuthenticationFilter.class
             );
 
         return http.build();
