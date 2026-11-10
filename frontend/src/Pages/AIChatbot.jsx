@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react'
 import {
   ShieldCheck,
@@ -11,14 +10,14 @@ import {
   Sparkles,
   Phone,
   AlertTriangle,
-  MessageCircle,
-  Clock,
-  ShieldAlert
+  MessageCircle
 } from 'lucide-react'
+import api from '../services/api'
 import '../App.css'
 
 function AIChatbot() {
   const [message, setMessage] = useState('')
+
   const [messages, setMessages] = useState([
     {
       text: 'Hello! Welcome to SafeHer AI Assistant. 💚 I am here to help you with safety tips, emergency guidance and general support. How can I help you today?',
@@ -33,120 +32,85 @@ function AIChatbot() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
 
-  function getBotResponse(userMessage) {
-    const text = userMessage.toLowerCase()
-
-    if (
-      text.includes('emergency') ||
-      text.includes('danger') ||
-      text.includes('unsafe') ||
-      text.includes('help me')
-    ) {
-      return 'If you are in immediate danger, try to move to a safe and crowded place if possible. Call 112 for emergency assistance in India. You can also contact someone you trust. Your safety comes first.'
-    }
-
-    if (
-      text.includes('stalking') ||
-      text.includes('follow') ||
-      text.includes('following')
-    ) {
-      return 'If someone is following you, avoid going somewhere isolated. Move towards a crowded and well-lit place, contact a trusted person and call 112 if you feel threatened.'
-    }
-
-    if (
-      text.includes('travel') ||
-      text.includes('journey') ||
-      text.includes('travelling')
-    ) {
-      return 'Before travelling, share your route and expected arrival time with a trusted contact. Prefer familiar, well-lit routes and keep your phone charged.'
-    }
-
-    if (
-      text.includes('harassment') ||
-      text.includes('abuse')
-    ) {
-      return 'I am sorry you are facing this situation. You deserve to feel safe and respected. If possible, move away from the situation, preserve relevant evidence and reach out to someone you trust or local support services.'
-    }
-
-    if (
-      text.includes('safety tips') ||
-      text.includes('safe')
-    ) {
-      return 'Here are some safety tips: 1. Share your travel plans with trusted contacts. 2. Keep your phone charged. 3. Prefer well-lit public places. 4. Trust your instincts. 5. Call 112 in an emergency.'
-    }
-
-    if (
-      text.includes('hello') ||
-      text.includes('hi') ||
-      text.includes('hey')
-    ) {
-      return 'Hello! 💚 Welcome to SafeHer. You can ask me about personal safety, travel precautions, emergency guidance and general safety tips.'
-    }
-
-    return 'Thank you for sharing with me. Your safety and well-being matter. I can provide general safety tips and guidance. If you are in immediate danger, call 112 in India or contact someone you trust.'
-  }
-
-  function handleSend(e) {
-    e.preventDefault()
-
-    if (!message.trim()) {
+  async function sendMessage(userText) {
+    if (!userText.trim() || isTyping) {
       return
     }
 
-    const userText = message.trim()
+    const previousMessages = messages
 
-    const newMessage = {
-      text: userText,
-      sender: 'user'
-    }
-
-    setMessages((previousMessages) => [
-      ...previousMessages,
-      newMessage
+    setMessages((previous) => [
+      ...previous,
+      {
+        text: userText,
+        sender: 'user'
+      }
     ])
 
     setMessage('')
     setIsTyping(true)
 
-    setTimeout(() => {
-      const botReply = {
-        text: getBotResponse(userText),
-        sender: 'bot'
-      }
+    try {
+      const response = await api.post('/chatbot/message', {
+        message: userText,
+        history: previousMessages.map((item) => ({
+          text: item.text,
+          sender: item.sender
+        }))
+      })
 
-      setMessages((previousMessages) => [
-        ...previousMessages,
-        botReply
-      ])
+      const botReply = response.data.reply
 
-      setIsTyping(false)
-    }, 700)
-  }
-
-  function handleSuggestion(text) {
-    const userMessage = {
-      text,
-      sender: 'user'
-    }
-
-    setMessages((previousMessages) => [
-      ...previousMessages,
-      userMessage
-    ])
-
-    setIsTyping(true)
-
-    setTimeout(() => {
-      setMessages((previousMessages) => [
-        ...previousMessages,
+      setMessages((previous) => [
+        ...previous,
         {
-          text: getBotResponse(text),
+          text: botReply || 'Sorry, I could not generate a response.',
           sender: 'bot'
         }
       ])
 
+    } catch (error) {
+      console.error('Chatbot API Error:', error)
+
+      let errorMessage =
+        'Sorry, SafeHer AI is temporarily unavailable. Please try again later.'
+
+      if (error.response?.status === 401) {
+        errorMessage =
+          'Your login session may have expired. Please login again.'
+      } else if (error.response?.status === 403) {
+        errorMessage =
+          'You are not authorized to use this service.'
+      } else if (error.response?.status === 429) {
+        errorMessage =
+          'Too many requests. Please wait a moment and try again.'
+      } else if (!error.response) {
+        errorMessage =
+          'Cannot connect to the server. Please check whether the Backend is running.'
+      } else if (error.response?.data?.reply) {
+        errorMessage = error.response.data.reply
+      }
+
+      setMessages((previous) => [
+        ...previous,
+        {
+          text: errorMessage,
+          sender: 'bot'
+        }
+      ])
+
+    } finally {
       setIsTyping(false)
-    }, 700)
+    }
+  }
+
+  function handleSend(e) {
+    e.preventDefault()
+    sendMessage(message.trim())
+  }
+
+  function handleSuggestion(text) {
+    sendMessage(text)
   }
 
   function clearChat() {
@@ -154,7 +118,7 @@ function AIChatbot() {
       'Are you sure you want to clear this conversation?'
     )
 
-    if (confirmClear) {
+    if (confirmClear && !isTyping) {
       setMessages([
         {
           text: 'Hello! Welcome to SafeHer AI Assistant. 💚 How can I help you today?',
@@ -260,7 +224,7 @@ function AIChatbot() {
 
                 <div className="ai-online-status">
                   <span></span>
-                  Demo Support
+                  Gemini AI Support
                 </div>
               </div>
 
@@ -271,6 +235,7 @@ function AIChatbot() {
               className="ai-clear-btn"
               onClick={clearChat}
               title="Clear conversation"
+              disabled={isTyping}
             >
               <Trash2 size={17} />
               <span>Clear Chat</span>
@@ -305,7 +270,9 @@ function AIChatbot() {
                   </div>
 
                   <span className="ai-message-time">
-                    {item.sender === 'bot' ? 'SafeHer Assistant' : 'You'}
+                    {item.sender === 'bot'
+                      ? 'SafeHer Assistant'
+                      : 'You'}
                   </span>
 
                 </div>
@@ -353,6 +320,7 @@ function AIChatbot() {
                     key={index}
                     type="button"
                     onClick={() => handleSuggestion(item)}
+                    disabled={isTyping}
                   >
                     <MessageCircle size={15} />
                     {item}
@@ -373,6 +341,7 @@ function AIChatbot() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               disabled={isTyping}
+              maxLength={3000}
             />
 
             <button
@@ -417,9 +386,10 @@ function AIChatbot() {
         <div className="ai-safety-notice">
           <AlertTriangle size={19} />
           <p>
-            <strong>Safety Reminder:</strong> This is a demonstration chatbot
-            that provides predefined responses. Do not share passwords,
-            OTPs or sensitive personal information in this chat.
+            <strong>Safety Reminder:</strong> SafeHer AI provides
+            general safety and legal information. AI responses may
+            not always be accurate. Do not share passwords, OTPs
+            or sensitive personal information in this chat.
             In an emergency, call 112 directly.
           </p>
         </div>
