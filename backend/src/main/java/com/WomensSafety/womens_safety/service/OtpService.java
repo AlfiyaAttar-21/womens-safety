@@ -1,3 +1,4 @@
+
 package com.WomensSafety.womens_safety.service;
 
 import com.WomensSafety.womens_safety.entity.OtpVerification;
@@ -8,24 +9,16 @@ import com.WomensSafety.womens_safety.repository.OtpRepository;
 import com.WomensSafety.womens_safety.repository.PasswordResetOtpRepository;
 import com.WomensSafety.womens_safety.repository.UserRepository;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
 @Service
 public class OtpService {
-
-    private static final Logger logger =
-            LoggerFactory.getLogger(OtpService.class);
 
     private static final int MAX_ATTEMPTS = 5;
     private static final int EXPIRY_MINUTES = 5;
@@ -34,7 +27,6 @@ public class OtpService {
     private final OtpRepository otpRepository;
     private final PasswordResetOtpRepository passwordResetOtpRepository;
     private final PasswordEncoder passwordEncoder;
-    private final SmsService smsService;
     private final EmailService emailService;
     private final UserRepository userRepository;
 
@@ -44,41 +36,31 @@ public class OtpService {
             OtpRepository otpRepository,
             PasswordResetOtpRepository passwordResetOtpRepository,
             PasswordEncoder passwordEncoder,
-            SmsService smsService,
             EmailService emailService,
             UserRepository userRepository) {
 
         this.otpRepository = otpRepository;
         this.passwordResetOtpRepository = passwordResetOtpRepository;
         this.passwordEncoder = passwordEncoder;
-        this.smsService = smsService;
         this.emailService = emailService;
         this.userRepository = userRepository;
     }
 
-    // Sends by email when the user has one, otherwise falls back to SMS
-    private void deliver(
-            String phoneNumber,
-            String email,
-            String subject,
-            String message) {
-
-        if (email != null && !email.isBlank()) {
-            emailService.send(email, subject, message);
-        } else {
-            smsService.send(phoneNumber, message);
-        }
+    // Generate secure 6-digit OTP
+    private String generateOtp() {
+        return String.format("%06d", random.nextInt(1_000_000));
     }
 
-    private String emailFor(String phoneNumber) {
-        return userRepository.findByPhoneNumber(phoneNumber)
-                .map(User::getEmail)
-                .orElse(null);
-    }
-
-    // Registration OTP
+    // Registration OTP - email passed directly
     @Transactional
-    public void sendOtp(String phoneNumber) {
+    public void sendOtp(String phoneNumber, String email) {
+
+        if (email == null || email.isBlank()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Registered email address not found"
+            );
+        }
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -87,7 +69,8 @@ public class OtpService {
                 .orElseGet(OtpVerification::new);
 
         if (otp.getSentAt() != null &&
-                otp.getSentAt().plusSeconds(RESEND_COOLDOWN_SECONDS)
+                otp.getSentAt()
+                        .plusSeconds(RESEND_COOLDOWN_SECONDS)
                         .isAfter(now)) {
 
             throw new ApiException(
@@ -96,10 +79,7 @@ public class OtpService {
             );
         }
 
-        String code = String.format(
-                "%06d",
-                random.nextInt(1_000_000)
-        );
+        String code = generateOtp();
 
         otp.setPhoneNumber(phoneNumber);
         otp.setCodeHash(passwordEncoder.encode(code));
@@ -109,32 +89,15 @@ public class OtpService {
 
         otpRepository.save(otp);
 
-        String email = emailFor(phoneNumber);
-
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-
-                    @Override
-                    public void afterCommit() {
-                        try {
-                            deliver(
-                                    phoneNumber,
-                                    email,
-                                    "Your SafeHer verification code",
-                                    "Your SafeHer verification code is "
-                                            + code
-                                            + ". It expires in "
-                                            + EXPIRY_MINUTES
-                                            + " minutes. Do not share it with anyone."
-                            );
-                        } catch (Exception e) {
-                            logger.error(
-                                    "Failed to send registration OTP: {}",
-                                    e.getMessage()
-                            );
-                        }
-                    }
-                }
+        // Send registration OTP through Brevo
+        emailService.send(
+                email,
+                "Your SafeHer verification code",
+                "Your SafeHer verification code is "
+                        + code
+                        + ". It expires in "
+                        + EXPIRY_MINUTES
+                        + " minutes. Do not share it with anyone."
         );
     }
 
@@ -186,9 +149,24 @@ public class OtpService {
         otpRepository.delete(otp);
     }
 
-    // Send Password Reset OTP
+    // Send Forgot Password OTP
     @Transactional
     public void sendPasswordResetOtp(String phoneNumber) {
+
+        User user = userRepository.findByPhoneNumber(phoneNumber)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.BAD_REQUEST,
+                        "User not found"
+                ));
+
+        String email = user.getEmail();
+
+        if (email == null || email.isBlank()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Registered email address not found"
+            );
+        }
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -197,7 +175,8 @@ public class OtpService {
                 .orElseGet(PasswordResetOtp::new);
 
         if (otp.getSentAt() != null &&
-                otp.getSentAt().plusSeconds(RESEND_COOLDOWN_SECONDS)
+                otp.getSentAt()
+                        .plusSeconds(RESEND_COOLDOWN_SECONDS)
                         .isAfter(now)) {
 
             throw new ApiException(
@@ -206,10 +185,7 @@ public class OtpService {
             );
         }
 
-        String code = String.format(
-                "%06d",
-                random.nextInt(1_000_000)
-        );
+        String code = generateOtp();
 
         otp.setPhoneNumber(phoneNumber);
         otp.setCodeHash(passwordEncoder.encode(code));
@@ -219,33 +195,15 @@ public class OtpService {
 
         passwordResetOtpRepository.save(otp);
 
-        String email = emailFor(phoneNumber);
-
-        // Send after the database transaction commits
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-
-                    @Override
-                    public void afterCommit() {
-                        try {
-                            deliver(
-                                    phoneNumber,
-                                    email,
-                                    "Your SafeHer password reset code",
-                                    "Your SafeHer password reset OTP is "
-                                            + code
-                                            + ". It expires in "
-                                            + EXPIRY_MINUTES
-                                            + " minutes. Do not share it with anyone."
-                            );
-                        } catch (Exception e) {
-                            logger.error(
-                                    "Failed to send password reset OTP: {}",
-                                    e.getMessage()
-                            );
-                        }
-                    }
-                }
+        // Send password reset OTP through Brevo
+        emailService.send(
+                email,
+                "Your SafeHer password reset code",
+                "Your SafeHer password reset OTP is "
+                        + code
+                        + ". It expires in "
+                        + EXPIRY_MINUTES
+                        + " minutes. Do not share it with anyone."
         );
     }
 
@@ -296,7 +254,6 @@ public class OtpService {
             );
         }
 
-        // Delete OTP after successful verification
         passwordResetOtpRepository.delete(otp);
     }
 }

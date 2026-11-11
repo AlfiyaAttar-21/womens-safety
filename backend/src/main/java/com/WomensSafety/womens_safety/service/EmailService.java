@@ -1,3 +1,4 @@
+
 package com.WomensSafety.womens_safety.service;
 
 import java.util.List;
@@ -21,25 +22,31 @@ public class EmailService {
 
     public void send(String toEmail, String subject, String message) {
 
-        // Local development: no Brevo settings, so print instead
-        if (apiKey.isBlank() || from.isBlank()) {
-            System.out.println("DEV EMAIL to " + toEmail + ": " + message);
-            return;
+        if (apiKey == null || apiKey.isBlank()
+                || from == null || from.isBlank()) {
+            throw new IllegalStateException(
+                "Brevo configuration is missing"
+            );
         }
 
         Map<String, Object> body = Map.of(
-                "sender", Map.of("name", "SafeHer", "email", from),
-                "to", List.of(Map.of("email", toEmail)),
-                "subject", subject,
-                "textContent", message
+            "sender", Map.of(
+                "name", "SafeHer",
+                "email", from
+            ),
+            "to", List.of(
+                Map.of("email", toEmail)
+            ),
+            "subject", subject,
+            "textContent", message
         );
 
         client.post()
-                .uri("https://api.brevo.com/v3/smtp/email")
-                .header("api-key", apiKey)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body)
-                .retrieve()
-                .toBodilessEntity();
+            .uri("https://api.brevo.com/v3/smtp/email")
+            .header("api-key", apiKey)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body)
+            .retrieve()
+            .toBodilessEntity();
     }
 }

@@ -1,3 +1,4 @@
+
 package com.WomensSafety.womens_safety.service;
 
 import com.WomensSafety.womens_safety.dto.*;
@@ -93,9 +94,10 @@ public class AuthService {
 
         user.setRole(Role.ROLE_USER);
 
-        userRepository.save(user);
+        userRepository.saveAndFlush(user);
 
-        otpService.sendOtp(user.getPhoneNumber());
+        // Send registration OTP directly to the registered email
+        otpService.sendOtp(user.getPhoneNumber(), user.getEmail());
     }
 
     // Resend Registration OTP
@@ -114,7 +116,7 @@ public class AuthService {
             );
         }
 
-        otpService.sendOtp(phoneNumber);
+        otpService.sendOtp(phoneNumber, user.getEmail());
     }
 
     // Verify Registration OTP
@@ -133,7 +135,6 @@ public class AuthService {
         );
 
         user.setPhoneVerified(true);
-
         userRepository.save(user);
     }
 
@@ -179,7 +180,6 @@ public class AuthService {
         User user = userRepository.findByPhoneNumber(phoneNumber)
                 .orElse(null);
 
-        // Only send OTP to verified and active accounts
         if (user == null ||
                 !user.isPhoneVerified() ||
                 !user.isActive()) {
@@ -233,7 +233,6 @@ public class AuthService {
             );
         }
 
-        // Verify OTP before updating password
         otpService.verifyPasswordResetOtp(phoneNumber, otp);
 
         user.setPasswordHash(
@@ -247,7 +246,6 @@ public class AuthService {
     public AuthResponse refresh(String refreshToken) {
 
         try {
-
             Claims claims = jwtService.parseRefreshToken(refreshToken);
 
             Long userId = Long.valueOf(claims.getSubject());
