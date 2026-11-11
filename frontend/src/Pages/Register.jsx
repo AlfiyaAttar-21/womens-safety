@@ -1,10 +1,10 @@
-
 import { useState } from 'react'
 import api from '../services/api'
 import {
   ShieldCheck,
   UserRound,
   Phone,
+  Mail,
   Lock,
   Eye,
   EyeOff,
@@ -19,6 +19,7 @@ function Register() {
   const [formData, setFormData] = useState({
     name: '',
     phoneNumber: '',
+    email: '',
     password: '',
     normalPin: '',
     duressPin: ''
@@ -48,6 +49,11 @@ function Register() {
       return
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError('Enter a valid email address.')
+      return
+    }
+
     if (formData.password.length < 8 || formData.password.length > 64) {
       setError('Password must be 8 to 64 characters.')
       return
@@ -72,9 +78,12 @@ function Register() {
       setLoading(true)
 
       const response = await api.post(
-  '/users/register',
-  formData
-)
+        '/users/register',
+        {
+          ...formData,
+          email: formData.email.trim().toLowerCase()
+        }
+      )
 
       setMessage(
         response.data.message || 'Registration successful. Please verify OTP.'
@@ -140,6 +149,20 @@ function Register() {
               value={formData.phoneNumber}
               onChange={handleChange}
               maxLength="10"
+              required
+            />
+          </div>
+
+          <label>Email</label>
+          <div className="register-input-box">
+            <Mail size={19} />
+            <input
+              type="email"
+              name="email"
+              placeholder="Enter your email (OTP will be sent here)"
+              value={formData.email}
+              onChange={handleChange}
+              maxLength="150"
               required
             />
           </div>

@@ -95,6 +95,9 @@ public class SecurityConfig {
 
             .authorizeHttpRequests(auth -> auth
 
+                // Public home URL
+                .requestMatchers("/").permitAll()
+
                 // CORS preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
@@ -122,7 +125,7 @@ public class SecurityConfig {
                     "/api/tracking/public/**"
                 ).permitAll()
 
-                // Other endpoints require JWT authentication
+                // All other endpoints require JWT authentication
                 .anyRequest().authenticated()
             )
 

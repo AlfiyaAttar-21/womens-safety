@@ -1,11 +1,12 @@
-
 package com.WomensSafety.womens_safety.service;
 
 import com.WomensSafety.womens_safety.entity.OtpVerification;
 import com.WomensSafety.womens_safety.entity.PasswordResetOtp;
+import com.WomensSafety.womens_safety.entity.User;
 import com.WomensSafety.womens_safety.exception.ApiException;
 import com.WomensSafety.womens_safety.repository.OtpRepository;
 import com.WomensSafety.womens_safety.repository.PasswordResetOtpRepository;
+import com.WomensSafety.womens_safety.repository.UserRepository;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,8 @@ public class OtpService {
     private final PasswordResetOtpRepository passwordResetOtpRepository;
     private final PasswordEncoder passwordEncoder;
     private final SmsService smsService;
+    private final EmailService emailService;
+    private final UserRepository userRepository;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -41,12 +44,36 @@ public class OtpService {
             OtpRepository otpRepository,
             PasswordResetOtpRepository passwordResetOtpRepository,
             PasswordEncoder passwordEncoder,
-            SmsService smsService) {
+            SmsService smsService,
+            EmailService emailService,
+            UserRepository userRepository) {
 
         this.otpRepository = otpRepository;
         this.passwordResetOtpRepository = passwordResetOtpRepository;
         this.passwordEncoder = passwordEncoder;
         this.smsService = smsService;
+        this.emailService = emailService;
+        this.userRepository = userRepository;
+    }
+
+    // Sends by email when the user has one, otherwise falls back to SMS
+    private void deliver(
+            String phoneNumber,
+            String email,
+            String subject,
+            String message) {
+
+        if (email != null && !email.isBlank()) {
+            emailService.send(email, subject, message);
+        } else {
+            smsService.send(phoneNumber, message);
+        }
+    }
+
+    private String emailFor(String phoneNumber) {
+        return userRepository.findByPhoneNumber(phoneNumber)
+                .map(User::getEmail)
+                .orElse(null);
     }
 
     // Registration OTP
@@ -82,23 +109,28 @@ public class OtpService {
 
         otpRepository.save(otp);
 
+        String email = emailFor(phoneNumber);
+
         TransactionSynchronizationManager.registerSynchronization(
                 new TransactionSynchronization() {
 
                     @Override
                     public void afterCommit() {
                         try {
-                            smsService.send(
+                            deliver(
                                     phoneNumber,
-                                    "Your Women's Safety Companion code is "
+                                    email,
+                                    "Your SafeHer verification code",
+                                    "Your SafeHer verification code is "
                                             + code
                                             + ". It expires in "
                                             + EXPIRY_MINUTES
-                                            + " minutes."
+                                            + " minutes. Do not share it with anyone."
                             );
                         } catch (Exception e) {
                             logger.error(
-                                    "Failed to send OTP SMS to registered number"
+                                    "Failed to send registration OTP: {}",
+                                    e.getMessage()
                             );
                         }
                     }
@@ -187,24 +219,29 @@ public class OtpService {
 
         passwordResetOtpRepository.save(otp);
 
-        // Send SMS after database transaction commits
+        String email = emailFor(phoneNumber);
+
+        // Send after the database transaction commits
         TransactionSynchronizationManager.registerSynchronization(
                 new TransactionSynchronization() {
 
                     @Override
                     public void afterCommit() {
                         try {
-                            smsService.send(
+                            deliver(
                                     phoneNumber,
+                                    email,
+                                    "Your SafeHer password reset code",
                                     "Your SafeHer password reset OTP is "
                                             + code
                                             + ". It expires in "
                                             + EXPIRY_MINUTES
-                                            + " minutes."
+                                            + " minutes. Do not share it with anyone."
                             );
                         } catch (Exception e) {
                             logger.error(
-                                    "Failed to send password reset OTP SMS"
+                                    "Failed to send password reset OTP: {}",
+                                    e.getMessage()
                             );
                         }
                     }

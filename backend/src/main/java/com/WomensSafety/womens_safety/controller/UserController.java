@@ -1,4 +1,3 @@
-
 package com.WomensSafety.womens_safety.controller;
 
 import com.WomensSafety.womens_safety.dto.*;
@@ -35,7 +34,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of(
                         "message",
-                        "Registered. Enter the OTP sent to your phone"
+                        "Registered. Enter the OTP sent to your email"
                 ));
     }
 
@@ -48,7 +47,7 @@ public class UserController {
 
         return Map.of(
                 "message",
-                "Phone verified. You can now log in"
+                "Account verified. You can now log in"
         );
     }
 
@@ -59,7 +58,7 @@ public class UserController {
 
         authService.resendOtp(body.get("phoneNumber"));
 
-        return Map.of("message", "OTP sent");
+        return Map.of("message", "OTP sent to your email");
     }
 
     // User Login
@@ -87,7 +86,7 @@ public class UserController {
 
         return Map.of(
                 "message",
-                "If this verified account exists, a password reset OTP has been sent."
+                "If this verified account exists, a password reset OTP has been sent to its email."
         );
     }
 

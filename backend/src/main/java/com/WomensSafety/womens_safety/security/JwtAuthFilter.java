@@ -42,9 +42,37 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        return path.equals("/api/grid-cells")
+        // Public home page
+        if (path.equals("/")) {
+            return true;
+        }
+
+        // Public authentication APIs
+        if (path.equals("/api/users/register")
+                || path.equals("/api/users/verify-otp")
+                || path.equals("/api/users/resend-otp")
+                || path.equals("/api/users/login")
+                || path.equals("/api/users/refresh")
+                || path.equals("/api/users/forgot-password")
+                || path.equals("/api/users/reset-password")) {
+            return true;
+        }
+
+        // Public consent APIs
+        if (path.startsWith("/api/contacts/consent/")) {
+            return true;
+        }
+
+        // Public tracking APIs
+        if (path.equals("/api/grid-cells")
                 || path.startsWith("/api/grid-cells/")
-                || path.startsWith("/api/tracking/public/");
+                || path.startsWith("/api/tracking/public/")
+                || path.startsWith("/api/sos/track/")
+                || path.startsWith("/api/journeys/track/")) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override
@@ -59,9 +87,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
+        // No token: continue to Spring Security
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-
-            System.out.println("JWT ERROR: Authorization header missing");
 
             filterChain.doFilter(request, response);
             return;
@@ -75,13 +102,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             String tokenType = claims.get("type", String.class);
 
-            System.out.println("JWT SIGNATURE: VALID");
-            System.out.println("TOKEN TYPE: " + tokenType);
-            System.out.println("TOKEN SUBJECT: " + claims.getSubject());
-
+            // Only access tokens are accepted
             if (!"access".equals(tokenType)) {
-
-                System.out.println("JWT ERROR: Access token required");
 
                 response.sendError(
                         HttpServletResponse.SC_UNAUTHORIZED,
@@ -94,28 +116,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             User user = userRepository.findById(userId).orElse(null);
 
-            if (user == null) {
-
-                System.out.println("JWT ERROR: User not found");
+            // Check user existence and account status
+            if (user == null || !user.isActive()) {
 
                 response.sendError(
                         HttpServletResponse.SC_UNAUTHORIZED,
-                        "User not found");
+                        "User not found or inactive");
 
                 return;
             }
 
-            if (!user.isActive()) {
-
-                System.out.println("JWT ERROR: User is inactive");
-
-                response.sendError(
-                        HttpServletResponse.SC_UNAUTHORIZED,
-                        "User inactive");
-
-                return;
-            }
-
+            // Set authentication in security context
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 SimpleGrantedAuthority authority =
@@ -131,6 +142,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         .setAuthentication(authentication);
             }
 
+            System.out.println("JWT SIGNATURE: VALID");
             System.out.println("JWT AUTHENTICATION SUCCESS");
             System.out.println("USER ID: " + user.getId());
             System.out.println("USER ROLE: " + user.getRole());

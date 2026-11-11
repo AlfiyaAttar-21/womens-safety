@@ -1,4 +1,3 @@
-
 package com.WomensSafety.womens_safety.service;
 
 import com.WomensSafety.womens_safety.dto.*;
@@ -49,6 +48,24 @@ public class AuthService {
             );
         }
 
+        String email = req.getEmail() == null
+                ? ""
+                : req.getEmail().trim().toLowerCase();
+
+        if (email.isEmpty()) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Email is required"
+            );
+        }
+
+        if (userRepository.existsByEmail(email)) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "Email already registered"
+            );
+        }
+
         if (Objects.equals(req.getNormalPin(), req.getDuressPin())) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
@@ -60,6 +77,7 @@ public class AuthService {
 
         user.setName(req.getName().trim());
         user.setPhoneNumber(req.getPhoneNumber());
+        user.setEmail(email);
 
         user.setPasswordHash(
                 passwordEncoder.encode(req.getPassword())
@@ -92,7 +110,7 @@ public class AuthService {
         if (user.isPhoneVerified()) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
-                    "Phone already verified"
+                    "Account already verified"
             );
         }
 
@@ -141,7 +159,7 @@ public class AuthService {
         if (!user.isPhoneVerified()) {
             throw new ApiException(
                     HttpStatus.FORBIDDEN,
-                    "Verify your phone number with OTP first"
+                    "Verify your account with the OTP first"
             );
         }
 
@@ -250,7 +268,7 @@ public class AuthService {
             if (!user.isPhoneVerified()) {
                 throw new ApiException(
                         HttpStatus.FORBIDDEN,
-                        "Phone verification required"
+                        "Account verification required"
                 );
             }
 

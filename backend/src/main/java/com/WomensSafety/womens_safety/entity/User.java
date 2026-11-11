@@ -1,4 +1,3 @@
-
 package com.WomensSafety.womens_safety.entity;
 
 import jakarta.persistence.*;
@@ -22,6 +21,9 @@ public class User {
 
     @Column(nullable = false, unique = true, length = 15)
     private String phoneNumber;
+
+    @Column(unique = true, length = 150)
+    private String email;
 
     @Column(nullable = false, length = 100)
     private String passwordHash;
