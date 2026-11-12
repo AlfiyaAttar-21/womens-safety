@@ -28,47 +28,39 @@ public class SecurityConfig {
         this.jwtAuthFilter = jwtAuthFilter;
     }
 
-    // Password encryption
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // CORS configuration for React frontend
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
-                "http://localhost:5173"
+            "http://localhost:5173"
         ));
 
         config.setAllowedMethods(List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "PATCH",
-                "DELETE",
-                "OPTIONS"
+            "GET", "POST", "PUT", "PATCH",
+            "DELETE", "OPTIONS"
         ));
 
         config.setAllowedHeaders(List.of(
-                "Authorization",
-                "Content-Type"
+            "Authorization", "Content-Type"
         ));
 
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+            new UrlBasedCorsConfigurationSource();
 
         source.registerCorsConfiguration("/**", config);
 
         return source;
     }
 
-    // Spring Security configuration
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
@@ -95,11 +87,34 @@ public class SecurityConfig {
 
             .authorizeHttpRequests(auth -> auth
 
-                // Public home URL
-                .requestMatchers("/").permitAll()
+                // React frontend and static files
+                .requestMatchers(
+                    "/",
+                    "/index.html",
+                    "/assets/**",
+                    "/favicon.ico",
+                    "/vite.svg"
+                ).permitAll()
 
-                // CORS preflight requests
+                // CORS preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // React frontend pages
+                .requestMatchers(
+                    "/login",
+                    "/register",
+                    "/dashboard",
+                    "/trusted-contacts",
+                    "/safe-journey",
+                    "/incident-reporting",
+                    "/risk-map",
+                    "/ai-assistant",
+                    "/my-profile",
+                    "/verify-otp",
+                    "/forgot-password",
+                    "/consent/**",
+                    "/track/**"
+                ).permitAll()
 
                 // Public authentication APIs
                 .requestMatchers(
@@ -125,11 +140,10 @@ public class SecurityConfig {
                     "/api/tracking/public/**"
                 ).permitAll()
 
-                // All other endpoints require JWT authentication
+                // Other APIs require JWT
                 .anyRequest().authenticated()
             )
 
-            // JWT authentication filter
             .addFilterBefore(
                 jwtAuthFilter,
                 UsernamePasswordAuthenticationFilter.class
