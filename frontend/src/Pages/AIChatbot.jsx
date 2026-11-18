@@ -1,19 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import {
-  ShieldCheck,
-  Bot,
-  Send,
-  UserRound,
-  Heart,
-  Trash2,
-  ArrowLeft,
-  Sparkles,
-  Phone,
-  AlertTriangle,
-  MessageCircle
+  Bot, Send, UserRound, Trash2, Phone, AlertTriangle,
+  MessageCircle, ShieldCheck,
 } from 'lucide-react'
 import api from '../services/api'
-import '../App.css'
+import AppShell from '../components/AppShell'
+import { PageTitle } from '../components/FormBits'
 
 function AIChatbot() {
   const [message, setMessage] = useState('')
@@ -134,282 +126,121 @@ function AIChatbot() {
     'How can I travel safely?'
   ]
 
-  return (
-    <div className="ai-page">
+return (
+    <AppShell active="ai">
+      <PageTitle title="SafeHer AI" subtitle="Ask for safety tips, travel precautions or what to do in an emergency." />
 
-      {/* Navbar */}
-      <nav className="ai-navbar">
-
-        <a href="/dashboard" className="ai-brand">
-          <div className="ai-brand-icon">
-            <ShieldCheck size={25} />
+      <section className="flex h-[65vh] min-h-[420px] flex-col overflow-hidden rounded-3xl bg-white shadow-soft" aria-label="Chat">
+        <div className="flex items-center justify-between border-b border-ink/10 px-5 py-3">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-ink text-cream"><Bot size={20} /></span>
+            <div>
+              <h2 className="font-display font-bold leading-tight">SafeHer Assistant</h2>
+              <p className="flex items-center gap-1.5 text-xs text-ink-soft"><span className="h-2 w-2 rounded-full bg-safe" /> Online</p>
+            </div>
           </div>
-          <span>SafeHer</span>
-        </a>
-
-        <div className="ai-nav-right">
-
-          <a href="/dashboard" className="ai-dashboard-link">
-            <ArrowLeft size={17} />
-            Dashboard
-          </a>
-
           <button
-            className="ai-logout-btn"
-            onClick={() => {
-              sessionStorage.removeItem('safeherAccessToken')
-              sessionStorage.removeItem('safeherRefreshToken')
-              sessionStorage.removeItem('safeherUserId')
-              sessionStorage.removeItem('safeherUserName')
-              sessionStorage.removeItem('safeherPhoneNumber')
-              window.location.href = '/login'
-            }}
+            type="button"
+            onClick={clearChat}
+            disabled={isTyping}
+            title="Clear conversation"
+            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-ink-soft hover:bg-ink/5 disabled:opacity-50"
           >
-            Logout
+            <Trash2 size={16} /> <span className="hidden sm:inline">Clear chat</span>
           </button>
-
         </div>
 
-      </nav>
-
-      {/* Hero */}
-      <section className="ai-hero">
-
-        <div className="ai-hero-content">
-
-          <div className="ai-small-label">
-            <Sparkles size={15} />
-            YOUR DIGITAL SAFETY COMPANION
-          </div>
-
-          <h1>AI Safety Assistant</h1>
-
-          <p>
-            A supportive space for safety guidance, travel precautions
-            and helpful information whenever you need it.
-          </p>
-
-          <div className="ai-hero-note">
-            <Heart size={18} />
-            <span>You are not alone. Your safety matters.</span>
-          </div>
-
-        </div>
-
-        <div className="ai-hero-art">
-          <div className="ai-hero-circle">
-            <Bot size={66} strokeWidth={1.4} />
-            <span><Heart size={22} /></span>
-          </div>
-        </div>
-
-      </section>
-
-      {/* Main */}
-      <main className="ai-main">
-
-        <section className="ai-chat-card">
-
-          {/* Chat Header */}
-          <div className="ai-chat-header">
-
-            <div className="ai-chat-profile">
-
-              <div className="ai-bot-avatar">
-                <Bot size={27} />
-              </div>
-
-              <div>
-                <h2>SafeHer Assistant</h2>
-
-                <div className="ai-online-status">
-                  <span></span>
-                  Gemini AI Support
-                </div>
-              </div>
-
-            </div>
-
-            <button
-              type="button"
-              className="ai-clear-btn"
-              onClick={clearChat}
-              title="Clear conversation"
-              disabled={isTyping}
-            >
-              <Trash2 size={17} />
-              <span>Clear Chat</span>
-            </button>
-
-          </div>
-
-          {/* Chat Body */}
-          <div className="ai-chat-body">
-
-            <div className="ai-date-label">
-              <span>Conversation</span>
-            </div>
-
-            {messages.map((item, index) => (
-
+        <div className="flex-1 space-y-4 overflow-y-auto bg-cream/60 p-5" aria-live="polite">
+          {messages.map((item, index) => (
+            <div key={index} className={`flex items-end gap-2 ${item.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+              {item.sender === 'bot' && (
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink text-cream"><Bot size={16} /></span>
+              )}
               <div
-                key={index}
-                className={`ai-message-row ${item.sender}`}
+                className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-[15px] leading-relaxed ${
+                  item.sender === 'user' ? 'rounded-br-md bg-ink text-cream' : 'rounded-bl-md bg-white ring-1 ring-ink/10'
+                }`}
               >
-
-                {item.sender === 'bot' && (
-                  <div className="ai-message-avatar">
-                    <Bot size={18} />
-                  </div>
-                )}
-
-                <div className="ai-message-content">
-
-                  <div className="ai-message-bubble">
-                    {item.text}
-                  </div>
-
-                  <span className="ai-message-time">
-                    {item.sender === 'bot'
-                      ? 'SafeHer Assistant'
-                      : 'You'}
-                  </span>
-
-                </div>
-
-                {item.sender === 'user' && (
-                  <div className="ai-user-avatar">
-                    <UserRound size={18} />
-                  </div>
-                )}
-
+                {item.text}
               </div>
+              {item.sender === 'user' && (
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-lilac"><UserRound size={16} /></span>
+              )}
+            </div>
+          ))}
 
-            ))}
-
-            {isTyping && (
-              <div className="ai-message-row bot">
-
-                <div className="ai-message-avatar">
-                  <Bot size={18} />
-                </div>
-
-                <div className="ai-typing">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-
-              </div>
-            )}
-
-            <div ref={chatEndRef} />
-
-          </div>
-
-          {/* Suggestions */}
-          {messages.length === 1 && (
-            <div className="ai-suggestions">
-
-              <p>Try asking about:</p>
-
-              <div className="ai-suggestion-list">
-
-                {suggestions.map((item, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleSuggestion(item)}
-                    disabled={isTyping}
-                  >
-                    <MessageCircle size={15} />
-                    {item}
-                  </button>
+          {isTyping && (
+            <div className="flex items-end gap-2" aria-label="SafeHer AI is typing">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink text-cream"><Bot size={16} /></span>
+              <div className="flex gap-1 rounded-2xl rounded-bl-md bg-white px-4 py-4 ring-1 ring-ink/10">
+                {[0, 150, 300].map((d) => (
+                  <span key={d} className="h-2 w-2 animate-bounce rounded-full bg-ink-faint" style={{ animationDelay: `${d}ms` }} />
                 ))}
-
               </div>
-
             </div>
           )}
 
-          {/* Input */}
-          <form className="ai-input-form" onSubmit={handleSend}>
-
-            <input
-              type="text"
-              placeholder="Ask something about safety..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              disabled={isTyping}
-              maxLength={3000}
-            />
-
-            <button
-              type="submit"
-              disabled={!message.trim() || isTyping}
-            >
-              <Send size={18} />
-              Send
-            </button>
-
-          </form>
-
-          <div className="ai-chat-footer">
-            <ShieldCheck size={15} />
-            <span>General guidance only · Not a substitute for emergency services</span>
-          </div>
-
-        </section>
-
-        {/* Emergency Card */}
-        <section className="ai-emergency-card">
-
-          <div className="ai-emergency-icon">
-            <Phone size={23} />
-          </div>
-
-          <div className="ai-emergency-content">
-            <h3>Emergency Assistance</h3>
-            <p>
-              If you are in immediate danger, move to a safer place
-              if possible and call emergency services.
-            </p>
-          </div>
-
-          <a href="tel:112" className="ai-emergency-call">
-            Call 112
-          </a>
-
-        </section>
-
-        {/* Safety Notice */}
-        <div className="ai-safety-notice">
-          <AlertTriangle size={19} />
-          <p>
-            <strong>Safety Reminder:</strong> SafeHer AI provides
-            general safety and legal information. AI responses may
-            not always be accurate. Do not share passwords, OTPs
-            or sensitive personal information in this chat.
-            In an emergency, call 112 directly.
-          </p>
+          <div ref={chatEndRef} />
         </div>
 
-      </main>
+        {messages.length === 1 && (
+          <div className="flex flex-wrap gap-2 border-t border-ink/10 px-5 py-3">
+            {suggestions.map((item, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => handleSuggestion(item)}
+                disabled={isTyping}
+                className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-lilac px-4 text-sm font-semibold hover:bg-blush disabled:opacity-60"
+              >
+                <MessageCircle size={15} /> {item}
+              </button>
+            ))}
+          </div>
+        )}
 
-      {/* Footer */}
-      <footer className="ai-footer">
+        <form onSubmit={handleSend} className="flex gap-2 border-t border-ink/10 p-3">
+          <input
+            type="text"
+            aria-label="Your message"
+            placeholder="Ask something about safety"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            disabled={isTyping}
+            maxLength={3000}
+            className="h-12 min-w-0 flex-1 rounded-full bg-cream px-5 text-[15px] outline-none ring-1 ring-ink/15 focus:ring-2 focus:ring-ink"
+          />
+          <button
+            type="submit"
+            disabled={!message.trim() || isTyping}
+            aria-label="Send message"
+            className="inline-flex h-12 items-center gap-2 rounded-full bg-ink px-5 font-semibold text-cream disabled:opacity-50"
+          >
+            <Send size={17} /> <span className="hidden sm:inline">Send</span>
+          </button>
+        </form>
+      </section>
 
-        <div className="ai-footer-brand">
-          <ShieldCheck size={21} />
-          <span>SafeHer</span>
+      <p className="mt-3 flex items-center gap-2 text-xs text-ink-soft">
+        <ShieldCheck size={14} /> General guidance only. Not a substitute for emergency services.
+      </p>
+
+      <section className="mt-6 flex flex-wrap items-center gap-4 rounded-3xl bg-sos p-5 text-white">
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/20"><Phone size={22} /></span>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display text-lg font-bold">In immediate danger?</h3>
+          <p className="text-sm text-white/90">Move somewhere safer if you can and call emergency services.</p>
         </div>
+        <a href="tel:112" className="inline-flex min-h-[44px] items-center rounded-full bg-white px-6 font-semibold text-sos">Call 112</a>
+      </section>
 
-        <p>Stay Safe. Stay Strong. Stay Confident.</p>
-        <span>© 2026 SafeHer. All rights reserved.</span>
-
-      </footer>
-
-    </div>
+      <p className="mt-6 flex items-start gap-3 rounded-2xl bg-lilac/60 p-4 text-sm text-ink-soft">
+        <AlertTriangle size={20} className="mt-0.5 shrink-0 text-ink" />
+        <span>
+          AI answers can be wrong. Don’t share passwords, OTPs or other sensitive details in this chat.
+        </span>
+      </p>
+    </AppShell>
   )
 }
 

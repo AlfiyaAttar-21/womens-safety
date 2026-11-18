@@ -1,25 +1,11 @@
-
 import { useEffect, useRef, useState } from 'react'
 import api from '../services/api'
-
 import {
-  LayoutDashboard,
-  Users,
-  MapPin,
-  Navigation,
-  FileText,
-  Bot,
-  UserRound,
-  Settings,
-  Bell,
-  LogOut,
-  ShieldCheck,
-  AlertTriangle,
-  Clock,
-  ArrowUpRight,
-  X,
-  CheckCircle
+  Users, MapPin, Navigation, FileText, Bot, UserRound,
+  AlertTriangle, ArrowUpRight, X, CheckCircle, Lock, Siren,
 } from 'lucide-react'
+import AppShell from '../components/AppShell'
+import SOSButton from '../components/SOSButton'
 
 function Dashboard() {
   const [userName, setUserName] = useState(
@@ -362,339 +348,130 @@ function Dashboard() {
     window.location.href = '/login'
   }
 
+const light = 'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-cream px-6 text-[15px] font-semibold text-ink transition-colors hover:bg-white disabled:opacity-60'
+  const outline = 'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-6 text-[15px] font-semibold text-cream ring-1 ring-cream/40 transition-colors hover:bg-white/10 disabled:opacity-60'
+
   return (
-    <div className="min-h-screen bg-[#faf8f2] flex">
+    <AppShell active="dashboard" onLogout={handleLogout}>
+      <header>
+        <h1 className="font-display text-3xl font-extrabold sm:text-4xl">
+          Hi, {loading ? '…' : userName}
+        </h1>
+        <p className="mt-1 text-ink-soft">Your safety tools are ready.</p>
+      </header>
 
-      {/* Sidebar */}
-      <aside className="w-64 bg-[#f5f0e0] border-r border-[#d9cfb0] min-h-screen fixed left-0 top-0 flex flex-col">
+      {/* Emergency */}
+      <section aria-labelledby="sos-title" className="mt-8 rounded-[2rem] bg-ink p-6 text-cream md:p-10">
+        <div className="grid items-center gap-8 md:grid-cols-[1fr_auto]">
+          <div>
+            <h2 id="sos-title" className="font-display text-2xl font-bold">Emergency help</h2>
+            <p className="mt-2 max-w-md text-cream/75">
+              {activeAlert
+                ? 'An alert is active. Resolve it with your PIN once you are safe.'
+                : pinVerified
+                  ? 'SOS is ready. Press it, then you have 5 seconds to cancel.'
+                  : 'Enter your normal PIN to unlock the SOS button.'}
+            </p>
 
-        <div className="p-6 flex items-center gap-3">
-          <div className="bg-[#8d9d4f] text-white p-2 rounded-xl">
-            <ShieldCheck size={25} />
+            {activeAlert && (
+              <div role="alert" className="mt-5 rounded-2xl bg-sos/25 p-4 ring-1 ring-sos/60">
+                <p className="flex items-center gap-2 font-semibold"><AlertTriangle size={18} /> Active SOS alert</p>
+                <p className="mt-1 text-sm text-cream/85">Alert ID: {activeAlert.id}</p>
+                <p className="text-sm text-cream/85">Status: {activeAlert.state}</p>
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              {!activeAlert && !pinVerified && (
+                <button type="button" onClick={handleVerifyNormalPin} disabled={pinLoading} className={light}>
+                  <Lock size={17} /> {pinLoading ? 'Verifying PIN…' : 'Enter normal PIN'}
+                </button>
+              )}
+
+              {!activeAlert && pinVerified && (
+                <button type="button" onClick={cancelSOS} disabled={sosLoading} className={outline}>
+                  <X size={17} /> {countdown !== null ? `Cancel SOS (${countdown})` : 'Cancel SOS'}
+                </button>
+              )}
+
+              {activeAlert && (
+                <button type="button" onClick={handleResolveSOS} disabled={pinLoading} className={light}>
+                  {pinLoading ? 'Verifying PIN…' : 'Resolve alert with PIN'}
+                </button>
+              )}
+            </div>
+
+            {countdown !== null && (
+              <div role="alert" className="mt-5 rounded-2xl bg-sos/25 p-4 ring-1 ring-sos/60">
+                <p className="font-bold">SOS will be sent in {countdown} seconds.</p>
+                <p className="mt-1 text-sm text-cream/85">If this was accidental, press Cancel SOS now.</p>
+              </div>
+            )}
+
+            {sosMessage && (
+              <p role="status" className="mt-4 flex items-start gap-2 text-sm font-medium text-[#9BE3D5]">
+                <CheckCircle size={17} className="mt-0.5 shrink-0" /> {sosMessage}
+              </p>
+            )}
+            {sosError && (
+              <p role="alert" className="mt-4 flex items-start gap-2 text-sm font-medium text-[#FFB4BF]">
+                <X size={17} className="mt-0.5 shrink-0" /> {sosError}
+              </p>
+            )}
+
+            <p className="mt-5 text-xs text-cream/55">
+              An SOS alert may send an emergency SMS to your confirmed trusted contacts.
+            </p>
           </div>
 
-          <h1 className="text-2xl font-bold text-[#2c2a1e]">
-            Safe<span className="text-[#8d9d4f]">Her</span>
-          </h1>
+          <div className="mx-auto">
+            {activeAlert ? (
+              <div className="grid h-40 w-40 place-items-center rounded-full bg-sos/25 ring-4 ring-sos"><Siren size={56} /></div>
+            ) : pinVerified ? (
+              <SOSButton
+                size={160}
+                onClick={handleSOS}
+                disabled={sosLoading || countdown !== null}
+                label={sosLoading ? '…' : countdown !== null ? String(countdown) : 'SOS'}
+              />
+            ) : (
+              <div className="grid h-40 w-40 place-items-center rounded-full bg-white/10 text-center text-cream/70">
+                <span><Lock className="mx-auto mb-1" size={30} /><span className="text-sm font-semibold">Locked</span></span>
+              </div>
+            )}
+          </div>
         </div>
+      </section>
 
-        <div className="px-4 mt-6">
-          <p className="text-xs font-semibold text-[#6b6550] uppercase mb-4 px-3">
-            Main Menu
-          </p>
-
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#e7dbbf] text-[#6b7a3a] font-semibold">
-            <LayoutDashboard size={20} />
-            Dashboard
-          </button>
-
-          {[
-            { name: 'Trusted Contacts', icon: Users, link: '/trusted-contacts' },
-            { name: 'Safe Journey', icon: Navigation, link: '/safe-journey' },
-            { name: 'Incident Reports', icon: FileText, link: '/incident-reporting' },
-            { name: 'Safety Risk Map', icon: MapPin, link: '/risk-map' },
-            { name: 'AI Assistant', icon: Bot, link: '/ai-assistant' }
-          ].map((item) => {
-            const Icon = item.icon
-
+      {/* Services */}
+      <section className="mt-12">
+        <h2 className="font-display text-2xl font-bold">Your safety tools</h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {services.map((service) => {
+            const Icon = service.icon
             return (
               <button
-                key={item.name}
-                onClick={() => openPage(item.link)}
-                className="w-full flex items-center gap-3 px-4 py-3 mt-2 rounded-xl text-[#6b6550] hover:bg-[#e7dbbf] hover:text-[#6b7a3a] transition"
+                key={service.title}
+                type="button"
+                onClick={() => openPage(service.link)}
+                className="group rounded-3xl bg-white p-6 text-left shadow-soft transition-transform hover:-translate-y-0.5"
               >
-                <Icon size={20} />
-                {item.name}
+                <div className="flex items-start justify-between">
+                  <span className="grid h-12 w-12 place-items-center rounded-2xl bg-lilac text-ink"><Icon size={23} /></span>
+                  <ArrowUpRight size={20} className="text-ink-faint group-hover:text-ink" />
+                </div>
+                <h3 className="mt-5 font-display text-lg font-bold">{service.title}</h3>
+                <p className="mt-1 text-sm text-ink-soft">{service.description}</p>
               </button>
             )
           })}
         </div>
+      </section>
 
-        <div className="mt-auto p-4 border-t border-[#d9cfb0]">
-          <button
-            onClick={() => openPage('/my-profile')}
-            className="w-full flex items-center gap-3 px-4 py-3 text-[#6b6550] hover:bg-[#e7dbbf] rounded-xl"
-          >
-            <Settings size={20} />
-            My Profile
-          </button>
-
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl"
-          >
-            <LogOut size={20} />
-            Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="ml-64 flex-1 p-8">
-
-        {/* Header */}
-        <header className="flex justify-between items-center mb-8">
-
-          <div>
-            <h2 className="text-2xl font-bold text-[#2c2a1e]">
-              Dashboard
-            </h2>
-
-            <p className="text-[#6b6550] text-sm mt-1">
-              Welcome back! Stay safe and confident.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-5">
-
-            <button className="relative p-3 bg-white rounded-xl shadow-sm text-[#6b6550]">
-              <Bell size={21} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-
-            <button
-              onClick={() => openPage('/my-profile')}
-              className="flex items-center gap-3 bg-white p-2 pr-4 rounded-xl shadow-sm"
-            >
-              <div className="w-10 h-10 bg-[#e7dbbf] text-[#6b7a3a] rounded-full flex items-center justify-center">
-                <UserRound size={22} />
-              </div>
-
-              <div className="text-left">
-                <p className="text-sm font-semibold text-[#2c2a1e]">
-                  My Account
-                </p>
-
-                <p className="text-xs text-[#6b6550]">
-                  {loading ? 'Loading...' : userName}
-                </p>
-              </div>
-            </button>
-          </div>
-        </header>
-
-        {/* Welcome Banner */}
-        <section className="bg-gradient-to-r from-[#6b7a3a] to-[#8d9d4f] rounded-2xl p-8 text-white mb-8 relative overflow-hidden">
-
-          <div className="relative z-10">
-            <p className="text-[#f0ead6] text-sm font-medium mb-2">
-              YOUR SAFETY MATTERS
-            </p>
-
-            <h1 className="text-3xl font-bold mb-3">
-              Welcome to SafeHer, {userName}!
-            </h1>
-
-            <p className="text-[#f5f0e0] max-w-xl">
-              Your personal safety companion is here to help you
-              stay protected, connected and confident.
-            </p>
-          </div>
-
-          <ShieldCheck
-            size={150}
-            className="absolute right-10 top-5 text-white opacity-10"
-          />
-        </section>
-
-        {/* Emergency SOS */}
-        <section className="bg-[#e7dbbf] rounded-2xl p-6 shadow-sm border border-[#d9cfb0] mb-8">
-
-          <div className="flex items-center gap-3 mb-5">
-
-            <div className="p-3 bg-red-100 text-red-600 rounded-xl">
-              <AlertTriangle size={23} />
-            </div>
-
-            <div>
-              <h2 className="text-lg font-bold text-[#2c2a1e]">
-                Emergency Assistance
-              </h2>
-
-              <p className="text-sm text-[#6b6550]">
-                Need help? Emergency support is important.
-              </p>
-            </div>
-          </div>
-
-          {/* Active SOS Details */}
-          {activeAlert && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-5 mb-4">
-
-              <div className="flex items-center gap-2 text-red-700 font-bold mb-2">
-                <AlertTriangle size={20} />
-                Active SOS Alert
-              </div>
-
-              <p className="text-sm text-red-700 mb-2">
-                Alert ID: {activeAlert.id}
-              </p>
-
-              <p className="text-sm text-red-700">
-                Status: {activeAlert.state}
-              </p>
-            </div>
-          )}
-
-          {/* SOS and PIN Buttons */}
-          <div className="flex flex-wrap items-center gap-3">
-
-            {/* Initial Green PIN Button */}
-            {!activeAlert && !pinVerified && (
-              <button
-                type="button"
-                onClick={handleVerifyNormalPin}
-                disabled={pinLoading}
-                className="bg-green-700 hover:bg-green-800 text-white font-bold px-8 py-3 rounded-xl transition disabled:opacity-50"
-              >
-                {pinLoading ? 'Verifying PIN...' : 'Enter Normal PIN'}
-              </button>
-            )}
-
-            {/* Show SOS and Cancel after PIN verification */}
-            {!activeAlert && pinVerified && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleSOS}
-                  disabled={sosLoading || countdown !== null}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-3 rounded-xl transition disabled:opacity-50"
-                >
-                  {sosLoading ? 'Sending SOS...' : 'SOS Emergency'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={cancelSOS}
-                  disabled={sosLoading}
-                  className="bg-gray-700 hover:bg-gray-800 text-white font-bold px-8 py-3 rounded-xl transition disabled:opacity-50"
-                >
-                  <span className="flex items-center gap-2">
-                    <X size={18} />
-                    {countdown !== null
-                      ? `Cancel SOS (${countdown})`
-                      : 'Cancel SOS'}
-                  </span>
-                </button>
-              </>
-            )}
-
-            {/* Resolve button when alert is active */}
-            {activeAlert && (
-              <button
-                type="button"
-                onClick={handleResolveSOS}
-                disabled={pinLoading}
-                className="bg-green-700 hover:bg-green-800 text-white font-bold px-8 py-3 rounded-xl transition disabled:opacity-50"
-              >
-                {pinLoading ? 'Verifying PIN...' : 'Resolve Alert with PIN'}
-              </button>
-            )}
-
-          </div>
-
-          {countdown !== null && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mt-4">
-              <p className="text-lg font-bold text-red-700">
-                SOS will be triggered in {countdown} seconds.
-              </p>
-
-              <p className="text-sm text-red-700 mt-1">
-                If this was accidental, click Cancel SOS immediately.
-              </p>
-            </div>
-          )}
-
-          {sosMessage && (
-            <p className="text-sm text-green-700 font-semibold mt-3 flex items-center gap-2">
-              <CheckCircle size={17} />
-              {sosMessage}
-            </p>
-          )}
-
-          {sosError && (
-            <p className="text-sm text-red-700 font-semibold mt-3 flex items-center gap-2">
-              <X size={17} />
-              {sosError}
-            </p>
-          )}
-
-          <p className="text-xs text-[#6b6550] mt-3">
-            An SOS alert may send an emergency SMS to your confirmed trusted contacts.
-          </p>
-        </section>
-
-        {/* Services */}
-        <section>
-
-          <div className="flex justify-between items-center mb-5">
-
-            <div>
-              <h2 className="text-xl font-bold text-[#2c2a1e]">
-                Your Safety Services
-              </h2>
-
-              <p className="text-sm text-[#6b6550] mt-1">
-                Choose a service to continue.
-              </p>
-            </div>
-
-            <span className="text-sm text-[#6b7a3a] font-semibold">
-              6 Services
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-
-            {services.map((service) => {
-              const Icon = service.icon
-
-              return (
-                <div
-                  key={service.title}
-                  onClick={() => openPage(service.link)}
-                  className="bg-white p-6 rounded-2xl border border-[#d9cfb0] shadow-sm hover:shadow-md hover:-translate-y-1 transition cursor-pointer"
-                >
-
-                  <div className="flex justify-between items-start mb-5">
-
-                    <div className="p-3 rounded-xl bg-[#f0ead6] text-[#6b7a3a]">
-                      <Icon size={24} />
-                    </div>
-
-                    <ArrowUpRight size={20} className="text-[#8a7e65}" />
-                  </div>
-
-                  <h3 className="font-bold text-[#2c2a1e] text-lg mb-2">
-                    {service.title}
-                  </h3>
-
-                  <p className="text-sm text-[#6b6550] mb-5">
-                    {service.description}
-                  </p>
-
-                  <span className="text-sm font-semibold text-[#6b7a3a]">
-                    Open Service →
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="mt-10 pt-6 border-t border-[#d9cfb0] flex justify-between text-sm text-[#6b6550]">
-
-          <p>© 2026 SafeHer. All rights reserved.</p>
-
-          <p className="flex items-center gap-2">
-            <Clock size={15} />
-            Stay Safe. Stay Confident.
-          </p>
-        </footer>
-
-      </main>
-    </div>
+      <div className="mt-12 border-t border-ink/10 pt-6 text-sm text-ink-soft">
+        © 2026 SafeHer. Stay safe. Stay strong. Stay confident.
+      </div>
+    </AppShell>
   )
 }
 

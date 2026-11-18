@@ -1,23 +1,15 @@
-
 import { useEffect, useState } from 'react'
 import {
-  ShieldCheck,
-  FileText,
-  ClipboardList,
-  AlertTriangle,
-  MapPin,
-  CalendarDays,
-  Trash2,
-  ArrowLeft,
-  Heart,
-  Eye,
-  MessageCircle,
-  Siren,
-  Navigation
+  FileText, ClipboardList, AlertTriangle, MapPin, CalendarDays,
+  Trash2, Eye, MessageCircle, Siren, Navigation, ShieldCheck,
 } from 'lucide-react'
-
 import api from '../services/api'
-import '../App.css'
+import AppShell from '../components/AppShell'
+import Field from '../components/Field'
+import Button from '../components/Button'
+import Badge from '../components/Badge'
+import Card from '../components/Card'
+import { SelectField, TextAreaField, PageTitle } from '../components/FormBits'
 
 function IncidentReporting() {
 
@@ -329,444 +321,121 @@ function IncidentReporting() {
     return <FileText size={17} />
   }
 
-  return (
+return (
+    <AppShell active="reports">
+      <PageTitle
+        title="Incident reports"
+        subtitle="Share what happened. Your reports help build a clearer picture of unsafe places."
+      >
+        <span className="inline-flex items-center gap-2 rounded-full bg-lilac px-4 py-2 text-sm font-semibold">
+          <ClipboardList size={17} /> {reports.length} {reports.length === 1 ? 'report' : 'reports'}
+        </span>
+      </PageTitle>
 
-    <div className="ir-page">
-
-      {/* Navbar */}
-      <nav className="ir-navbar">
-
-        <a href="/dashboard" className="ir-brand">
-          <div className="ir-brand-icon">
-            <ShieldCheck size={25} />
-          </div>
-          <span>SafeHer</span>
-        </a>
-
-        <div className="ir-nav-right">
-
-          <a href="/dashboard" className="ir-dashboard-link">
-            <ArrowLeft size={17} />
-            Dashboard
-          </a>
-
-          <button
-            className="ir-logout-btn"
-            onClick={() => {
-              sessionStorage.removeItem('safeherAccessToken')
-              sessionStorage.removeItem('safeherRefreshToken')
-              sessionStorage.removeItem('safeherUserId')
-              sessionStorage.removeItem('safeherUserName')
-              sessionStorage.removeItem('safeherPhoneNumber')
-              window.location.href = '/login'
-            }}
-          >
-            Logout
-          </button>
-
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="ir-hero">
-
-        <div className="ir-hero-content">
-
-          <div className="ir-small-label">
-            <ShieldCheck size={15} />
-            YOUR VOICE MATTERS
-          </div>
-
-          <h1>Incident Reporting</h1>
-
-          <p>
-            Share details of safety-related incidents.
-            Your reports can help create awareness and support safer spaces.
+      <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
+        {/* Form */}
+        <Card className="h-fit">
+          <h2 className="flex items-center gap-2 font-display text-xl font-bold"><FileText size={20} /> Report an incident</h2>
+          <p className="mb-6 mt-2 flex items-start gap-2 text-sm text-ink-soft">
+            <ShieldCheck size={17} className="mt-0.5 shrink-0" />
+            Share only what you’re comfortable with. Never include passwords or other account details.
           </p>
 
-          <div className="ir-hero-note">
-            <Heart size={18} />
-            <span>
-              Your experience matters. Your voice deserves to be heard.
-            </span>
-          </div>
-
-        </div>
-
-        <div className="ir-hero-art">
-
-          <div className="ir-hero-circle">
-            <ClipboardList size={65} strokeWidth={1.4} />
-            <span><Heart size={23} /></span>
-          </div>
-
-        </div>
-
-      </section>
-
-      {/* Main */}
-      <main className="ir-main">
-
-        {/* Form */}
-        <section className="ir-form-card">
-
-          <div className="ir-section-heading">
-
-            <div className="ir-heading-icon">
-              <FileText size={23} />
+          <form onSubmit={handleSubmit} noValidate>
+            <Field label="Title" placeholder="A short title" value={title} maxLength="120"
+              onChange={(e) => setTitle(e.target.value)} />
+            <SelectField label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="">Select a category</option>
+              <option value="Harassment">Harassment</option>
+              <option value="Stalking">Stalking</option>
+              <option value="Unsafe Location">Unsafe Location</option>
+              <option value="Verbal Abuse">Verbal Abuse</option>
+              <option value="Physical Threat">Physical Threat</option>
+              <option value="Other">Other</option>
+            </SelectField>
+            <TextAreaField label="What happened?" rows="5" maxLength="1000" placeholder="Describe the incident"
+              value={description} onChange={(e) => setDescription(e.target.value)}
+              hint={`${description.length}/1000`} />
+            <div className="grid gap-x-4 sm:grid-cols-2">
+              <Field label="Date" icon={CalendarDays} type="date" max={maxDate} value={date}
+                onChange={(e) => setDate(e.target.value)} />
+              <Field label="Place" icon={MapPin} placeholder="Where did it happen?" maxLength="200"
+                value={location} onChange={(e) => setLocation(e.target.value)} />
             </div>
 
-            <div>
-              <h2>Report an Incident</h2>
-              <p>Provide the details below to create your report.</p>
-            </div>
-
-          </div>
-
-          <div className="ir-privacy-note">
-
-            <ShieldCheck size={20} />
-
-            <p>
-              Please share only the information you feel comfortable
-              providing. Avoid including passwords or other sensitive
-              account details.
-            </p>
-
-          </div>
-
-          <form onSubmit={handleSubmit} className="ir-form">
-
-            <div className="ir-form-group">
-
-              <label htmlFor="incidentTitle">
-                Incident Title
-              </label>
-
-              <input
-                id="incidentTitle"
-                type="text"
-                placeholder="Enter a short title"
-                value={title}
-                maxLength="120"
-                onChange={(e) => setTitle(e.target.value)}
-              />
-
-            </div>
-
-            <div className="ir-form-group">
-
-              <label htmlFor="incidentCategory">
-                Incident Category
-              </label>
-
-              <select
-                id="incidentCategory"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-
-                <option value="">Select incident category</option>
-                <option value="Harassment">Harassment</option>
-                <option value="Stalking">Stalking</option>
-                <option value="Unsafe Location">Unsafe Location</option>
-                <option value="Verbal Abuse">Verbal Abuse</option>
-                <option value="Physical Threat">Physical Threat</option>
-                <option value="Other">Other</option>
-
-              </select>
-
-            </div>
-
-            <div className="ir-form-group ir-full-width">
-
-              <label htmlFor="incidentDescription">
-                Incident Description
-              </label>
-
-              <textarea
-                id="incidentDescription"
-                placeholder="Describe what happened..."
-                rows="5"
-                maxLength="1000"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-
-              <span className="ir-character-count">
-                {description.length}/1000 characters
-              </span>
-
-            </div>
-
-            <div className="ir-form-group">
-
-              <label htmlFor="incidentDate">
-                Incident Date
-              </label>
-
-              <div className="ir-input-icon">
-
-                <CalendarDays size={18} />
-
-                <input
-                  id="incidentDate"
-                  type="date"
-                  max={maxDate}
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
-
-              </div>
-
-            </div>
-
-            <div className="ir-form-group">
-
-              <label htmlFor="incidentLocation">
-                Incident Location
-              </label>
-
-              <div className="ir-input-icon">
-
-                <MapPin size={18} />
-
-                <input
-                  id="incidentLocation"
-                  type="text"
-                  placeholder="Enter incident location"
-                  maxLength="200"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-
-              </div>
-
-            </div>
-
-            {/* Coordinates */}
-            <div className="ir-form-group ir-full-width">
-
-              <label>
-                Incident Coordinates (Optional)
-              </label>
-
-              <p>
-                If the incident happened at your current location,
-                click the button below to capture its coordinates.
+            <div className="mb-5 rounded-2xl bg-lilac/50 p-4">
+              <p className="text-sm font-semibold">Exact location (optional)</p>
+              <p className="mt-1 text-sm text-ink-soft">
+                If it happened where you are now, capture your coordinates so it appears on the risk map.
               </p>
-
-              <button
-                type="button"
-                className="ir-submit-btn"
-                onClick={useCurrentLocation}
-                disabled={submitting}
-              >
-
-                <Navigation size={18} />
-                Use My Current Location
-
-              </button>
-
-              {locationStatus && (
-                <p style={{ marginTop: '10px' }}>
-                  {locationStatus}
-                </p>
-              )}
-
+              <Button type="button" variant="secondary" className="mt-3" onClick={useCurrentLocation} disabled={submitting}>
+                <Navigation size={17} /> Use my current location
+              </Button>
+              {locationStatus && <p className="mt-3 text-sm text-ink-soft" role="status">{locationStatus}</p>}
               {latitude !== null && longitude !== null && (
-
-                <p style={{ marginTop: '8px' }}>
-                  Latitude: {latitude.toFixed(6)}
-                  <br />
-                  Longitude: {longitude.toFixed(6)}
+                <p className="mt-2 text-sm font-medium">
+                  Latitude {latitude.toFixed(6)}, longitude {longitude.toFixed(6)}
                 </p>
-
               )}
-
             </div>
 
-            <button
-              type="submit"
-              className="ir-submit-btn"
-              disabled={submitting}
-            >
-
-              <FileText size={18} />
-
-              {submitting
-                ? 'Submitting...'
-                : 'Submit Incident Report'}
-
-            </button>
-
+            <Button type="submit" className="w-full" disabled={submitting}>
+              <FileText size={17} /> {submitting ? 'Submitting…' : 'Submit report'}
+            </Button>
           </form>
-
-          <div className="ir-form-footer">
-
-            <ShieldCheck size={17} />
-
-            <span>
-              Speak up. Create awareness. Support safer spaces.
-            </span>
-
-          </div>
-
-        </section>
+        </Card>
 
         {/* Reports */}
-        <section className="ir-reports-section">
-
-          <div className="ir-reports-heading">
-
-            <div>
-              <h2>My Incident Reports</h2>
-              <p>Review the reports you have submitted.</p>
-            </div>
-
-            <div className="ir-report-count">
-              <ClipboardList size={19} />
-              <span>{reports.length} Reports</span>
-            </div>
-
-          </div>
-
+        <section aria-label="My reports">
           {loading ? (
-
-            <div className="ir-empty-state">
-              <h3>Loading your reports...</h3>
+            <div className="space-y-4" aria-busy="true">
+              {[1, 2].map((n) => <div key={n} className="h-40 animate-pulse rounded-3xl bg-ink/5" />)}
             </div>
-
           ) : reports.length === 0 ? (
-
-            <div className="ir-empty-state">
-
-              <div className="ir-empty-icon">
-                <ClipboardList size={42} />
-              </div>
-
-              <h3>No Reports Submitted Yet</h3>
-
-              <p>
-                Your submitted incident reports will appear here.
-                Use the form above to add your first report.
-              </p>
-
+            <div className="rounded-3xl border-2 border-dashed border-ink/15 p-10 text-center">
+              <ClipboardList className="mx-auto text-ink-faint" size={40} />
+              <h3 className="mt-4 font-display text-xl font-bold">No reports yet</h3>
+              <p className="mx-auto mt-2 max-w-sm text-ink-soft">Reports you submit will show up here.</p>
             </div>
-
           ) : (
-
-            <div className="ir-reports-grid">
-
+            <div className="space-y-4">
               {reports.map((report) => (
-
-                <article
-                  className="ir-report-card"
-                  key={report.id}
-                >
-
-                  <div className="ir-report-top">
-
-                    <div className="ir-report-icon">
-                      {getCategoryIcon(report.category)}
-                    </div>
-
-                    <span className="ir-category-badge">
-                      {report.category}
-                    </span>
-
+                <Card key={report.id} className="!p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-lilac">{getCategoryIcon(report.category)}</span>
+                    <Badge>{report.category}</Badge>
                   </div>
-
-                  <h3>{report.title}</h3>
-
-                  <div className="ir-report-description">
-
-                    <span>Description</span>
-
-                    <p>{report.description}</p>
-
+                  <h3 className="mt-3 font-display text-lg font-bold">{report.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-ink-soft">{report.description}</p>
+                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-soft">
+                    <span className="inline-flex items-center gap-1.5"><CalendarDays size={15} /> {formatDate(report.incidentDate)}</span>
+                    <span className="inline-flex items-center gap-1.5"><MapPin size={15} /> {report.location}</span>
                   </div>
-
-                  <div className="ir-report-meta">
-
-                    <div>
-                      <CalendarDays size={16} />
-                      <span>
-                        {formatDate(report.incidentDate)}
-                      </span>
-                    </div>
-
-                    <div>
-                      <MapPin size={16} />
-                      <span>{report.location}</span>
-                    </div>
-
-                  </div>
-
                   <button
                     type="button"
-                    className="ir-delete-btn"
                     disabled={deletingId === report.id}
                     onClick={() => deleteReport(report.id)}
+                    className="mt-4 inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-sos ring-1 ring-sos/30 hover:bg-[#FBDDE2] disabled:opacity-60"
                   >
-
-                    <Trash2 size={16} />
-
-                    {deletingId === report.id
-                      ? 'Deleting...'
-                      : 'Delete Report'}
-
+                    <Trash2 size={15} /> {deletingId === report.id ? 'Deleting…' : 'Delete report'}
                   </button>
-
-                </article>
-
+                </Card>
               ))}
-
             </div>
-
           )}
 
+          <div className="mt-6 flex items-start gap-3 rounded-3xl bg-sos p-5 text-white">
+            <Siren size={24} className="mt-0.5 shrink-0" />
+            <div>
+              <h3 className="font-display text-lg font-bold">In immediate danger?</h3>
+              <p className="mt-1 text-sm text-white/90">
+                Move somewhere safer if you can and call 112, India’s emergency number.
+              </p>
+            </div>
+          </div>
         </section>
-
-        {/* Support Note */}
-        <div className="ir-support-note">
-
-          <div className="ir-support-icon">
-            <Siren size={23} />
-          </div>
-
-          <div>
-
-            <h3>Need immediate help?</h3>
-
-            <p>
-              If you are in immediate danger, move to a safer place
-              if possible and contact local emergency services.
-              In India, you can call 112 for emergency assistance.
-            </p>
-
-          </div>
-
-        </div>
-
-      </main>
-
-      {/* Footer */}
-      <footer className="ir-footer">
-
-        <div className="ir-footer-brand">
-          <ShieldCheck size={21} />
-          <span>SafeHer</span>
-        </div>
-
-        <p>Stay Safe. Stay Strong. Stay Confident.</p>
-
-        <span>© 2026 SafeHer. All rights reserved.</span>
-
-      </footer>
-
-    </div>
-
+      </div>
+    </AppShell>
   )
 }
 

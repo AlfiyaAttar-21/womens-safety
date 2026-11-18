@@ -1,21 +1,12 @@
 import { useState } from 'react'
 import api from '../services/api'
-import {
-  ShieldCheck,
-  UserRound,
-  Phone,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  ArrowRight
-} from 'lucide-react'
+import { UserRound, Phone, Mail, Lock, KeyRound, ShieldAlert } from 'lucide-react'
+import AuthLayout from '../components/AuthLayout'
+import Field from '../components/Field'
+import Alert from '../components/Alert'
+import Button from '../components/Button'
 
 function Register() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [showNormalPin, setShowNormalPin] = useState(false)
-  const [showDuressPin, setShowDuressPin] = useState(false)
-
   const [formData, setFormData] = useState({
     name: '',
     phoneNumber: '',
@@ -31,11 +22,7 @@ function Register() {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-
-    setFormData({
-      ...formData,
-      [name]: value
-    })
+    setFormData({ ...formData, [name]: value })
   }
 
   const handleSubmit = async (e) => {
@@ -77,24 +64,18 @@ function Register() {
     try {
       setLoading(true)
 
-      const response = await api.post(
-        '/users/register',
-        {
-          ...formData,
-          email: formData.email.trim().toLowerCase()
-        }
-      )
+      const response = await api.post('/users/register', {
+        ...formData,
+        email: formData.email.trim().toLowerCase()
+      })
 
-      setMessage(
-        response.data.message || 'Registration successful. Please verify OTP.'
-      )
+      setMessage(response.data.message || 'Registration successful. Please verify OTP.')
 
       sessionStorage.setItem('safeherPhoneNumber', formData.phoneNumber)
 
       setTimeout(() => {
         window.location.href = '/verify-otp'
       }, 1500)
-
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -106,176 +87,60 @@ function Register() {
     }
   }
 
+  // strength hint is display-only
+  const pw = formData.password
+  const strength = pw.length === 0 ? 0 : [pw.length >= 8, /[A-Z]/.test(pw) && /[a-z]/.test(pw), /\d/.test(pw), /[^A-Za-z0-9]/.test(pw)].filter(Boolean).length
+  const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strength]
+  const strengthColor = ['bg-ink/10', 'bg-sos', 'bg-[#E8A317]', 'bg-safe', 'bg-safe'][strength]
+
   return (
-    <div className="register-container">
-      <div className="register-circle register-circle-one"></div>
-      <div className="register-circle register-circle-two"></div>
+    <AuthLayout
+      title="Create your account"
+      subtitle="It takes a minute. You can add trusted contacts next."
+      footer={<>Already have an account? <a href="/login" className="font-semibold text-ink underline">Log in</a></>}
+    >
+      <form onSubmit={handleSubmit} noValidate>
+        <Field label="Full name" icon={UserRound} name="name" placeholder="Your full name" autoComplete="name"
+          value={formData.name} onChange={handleChange} maxLength="100" required />
+        <Field label="Phone number" icon={Phone} type="tel" name="phoneNumber" placeholder="10-digit mobile number"
+          inputMode="numeric" autoComplete="tel" value={formData.phoneNumber} onChange={handleChange} maxLength="10" required />
+        <Field label="Email" icon={Mail} type="email" name="email" placeholder="you@example.com (backup for OTP)"
+          autoComplete="email" value={formData.email} onChange={handleChange} maxLength="150" required />
 
-      <div className="register-box">
-
-        <div className="register-logo">
-          <ShieldCheck size={42} />
+        <Field label="Password" icon={Lock} type="password" toggle name="password" placeholder="8 to 64 characters"
+          autoComplete="new-password" value={formData.password} onChange={handleChange} minLength="8" maxLength="64" required className="!mb-2" />
+        <div className="mb-5 flex items-center gap-3" aria-live="polite">
+          <div className="flex h-1.5 flex-1 gap-1">
+            {[1, 2, 3, 4].map((n) => (
+              <span key={n} className={`h-full flex-1 rounded-full ${n <= strength ? strengthColor : 'bg-ink/10'}`} />
+            ))}
+          </div>
+          <span className="w-12 text-xs font-semibold text-ink-soft">{strengthLabel}</span>
         </div>
 
-        <h1>Create Account</h1>
-
-        <p className="register-subtitle">
-          Join SafeHer and take a step towards safety
-        </p>
-
-        <form onSubmit={handleSubmit}>
-
-          <label>Full Name</label>
-          <div className="register-input-box">
-            <UserRound size={19} />
-            <input
-              type="text"
-              name="name"
-              placeholder="Enter your full name"
-              value={formData.name}
-              onChange={handleChange}
-              maxLength="100"
-              required
-            />
-          </div>
-
-          <label>Phone Number</label>
-          <div className="register-input-box">
-            <Phone size={19} />
-            <input
-              type="tel"
-              name="phoneNumber"
-              placeholder="Enter 10-digit mobile number"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-              maxLength="10"
-              required
-            />
-          </div>
-
-          <label>Email</label>
-          <div className="register-input-box">
-            <Mail size={19} />
-            <input
-              type="email"
-              name="email"
-              placeholder="Enter your email (OTP will be sent here)"
-              value={formData.email}
-              onChange={handleChange}
-              maxLength="150"
-              required
-            />
-          </div>
-
-          <label>Password</label>
-          <div className="register-input-box">
-            <Lock size={19} />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              placeholder="Create a password"
-              value={formData.password}
-              onChange={handleChange}
-              minLength="8"
-              maxLength="64"
-              required
-            />
-            <button
-              type="button"
-              className="register-password-toggle"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-            </button>
-          </div>
-
-          <label>Normal PIN</label>
-          <div className="register-input-box">
-            <Lock size={19} />
-            <input
-              type={showNormalPin ? 'text' : 'password'}
-              name="normalPin"
-              placeholder="Create 4 to 6 digit PIN"
-              value={formData.normalPin}
-              onChange={handleChange}
-              maxLength="6"
-              inputMode="numeric"
-              required
-            />
-            <button
-              type="button"
-              className="register-password-toggle"
-              onClick={() => setShowNormalPin(!showNormalPin)}
-            >
-              {showNormalPin ? <EyeOff size={19} /> : <Eye size={19} />}
-            </button>
-          </div>
-
-          <label>Duress PIN</label>
-          <div className="register-input-box">
-            <Lock size={19} />
-            <input
-              type={showDuressPin ? 'text' : 'password'}
-              name="duressPin"
-              placeholder="Create a secret emergency PIN"
-              value={formData.duressPin}
-              onChange={handleChange}
-              maxLength="6"
-              inputMode="numeric"
-              required
-            />
-            <button
-              type="button"
-              className="register-password-toggle"
-              onClick={() => setShowDuressPin(!showDuressPin)}
-            >
-              {showDuressPin ? <EyeOff size={19} /> : <Eye size={19} />}
-            </button>
-          </div>
-
-          <p className="register-pin-info">
-            Keep your Duress PIN secret. It is used for emergency situations.
-          </p>
-
-          <div className="register-terms">
-            <input type="checkbox" required />
-            <span>I agree to the Terms and Privacy Policy.</span>
-          </div>
-
-          {error && (
-            <p style={{ color: '#c93c37', fontSize: '14px' }}>
-              {typeof error === 'string' ? error : 'Please check your entered details.'}
-            </p>
-          )}
-
-          {message && (
-            <p style={{ color: '#6b7a3a', fontSize: '14px' }}>
-              {message}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            className="register-submit-btn"
-            disabled={loading}
-          >
-            {loading ? 'Please wait...' : 'Create Account'}
-            {!loading && <ArrowRight size={19} />}
-          </button>
-
-        </form>
-
-        <p className="register-login-text">
-          Already have an account? <a href="/login">Login</a>
-        </p>
-
-        <div className="register-security">
-          <ShieldCheck size={17} />
-          Your safety and privacy matter to us.
+        <div className="grid gap-x-4 sm:grid-cols-2">
+          <Field label="Normal PIN" icon={KeyRound} type="password" toggle name="normalPin" placeholder="4 to 6 digits"
+            inputMode="numeric" value={formData.normalPin} onChange={handleChange} maxLength="6" required />
+          <Field label="Duress PIN" icon={ShieldAlert} type="password" toggle name="duressPin" placeholder="Secret emergency PIN"
+            inputMode="numeric" value={formData.duressPin} onChange={handleChange} maxLength="6" required />
         </div>
+        <p className="-mt-1 mb-5 text-sm text-ink-soft">
+          Keep your duress PIN secret. If you’re forced to unlock the app, entering it quietly raises the alarm.
+        </p>
 
-      </div>
-    </div>
+        <label className="mb-5 flex items-start gap-3 text-sm">
+          <input type="checkbox" required className="mt-1 h-4 w-4 accent-[#2A1B3D]" />
+          <span>I agree to the Terms and Privacy Policy.</span>
+        </label>
+
+        <Alert>{typeof error === 'string' ? error : error ? 'Please check your entered details.' : ''}</Alert>
+        <Alert type="success">{message}</Alert>
+
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? 'Please wait…' : 'Create account'}
+        </Button>
+      </form>
+    </AuthLayout>
   )
 }
 

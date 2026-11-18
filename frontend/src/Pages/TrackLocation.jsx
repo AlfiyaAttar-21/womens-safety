@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
+import { Shield, MapPin, Clock } from 'lucide-react'
 import api from '../services/api'
 import 'leaflet/dist/leaflet.css'
 
@@ -67,145 +67,78 @@ function TrackLocation() {
     }
   }, [token])
 
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#faf8f2',
-      padding: '25px',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-
-      <div style={{
-        maxWidth: '1100px',
-        margin: 'auto'
-      }}>
-
-        <div style={{
-          background: '#8d9d4f',
-          color: 'white',
-          padding: '22px',
-          borderRadius: '14px',
-          marginBottom: '20px'
-        }}>
-          <h1 style={{ margin: 0 }}>
-            ♡ SafeHer Live Tracking
-          </h1>
-
-          <p style={{ marginBottom: 0 }}>
-            Live location shared by a SafeHer user
-          </p>
+return (
+    <div className="min-h-screen bg-cream font-sans text-ink antialiased">
+      <header className="bg-ink text-cream">
+        <div className="mx-auto flex max-w-4xl items-center gap-3 px-5 py-5">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-cream text-ink"><Shield size={21} /></span>
+          <div>
+            <h1 className="font-display text-xl font-extrabold leading-tight">SafeHer live location</h1>
+            <p className="text-sm text-cream/70">Shared with you by a SafeHer user</p>
+          </div>
         </div>
+      </header>
 
-        <div style={{
-          background: 'white',
-          padding: '20px',
-          borderRadius: '14px',
-          marginBottom: '20px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
-        }}>
-
-          <h2>Location Status</h2>
-
-          {loading && (
-            <p>Loading location...</p>
-          )}
+      <main className="mx-auto max-w-4xl px-5 py-6">
+        <section className="rounded-3xl bg-white p-6 shadow-soft" aria-live="polite">
+          {loading && <p className="text-ink-soft">Loading location…</p>}
 
           {!loading && location && (
-            <div>
-              <p style={{ color: 'green', fontWeight: 'bold' }}>
-                ● Location received
-              </p>
-
-              <p>
-                Latitude: {location.latitude}
-              </p>
-
-              <p>
-                Longitude: {location.longitude}
-              </p>
-
-              <p>
-                Last updated: {lastUpdated}
-              </p>
-
-              <p style={{ color: '#666' }}>
-                Location refreshes automatically every 5 seconds.
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="flex items-center gap-2 font-semibold text-[#136B5D]">
+                  <span className="relative flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-safe opacity-60" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-safe" />
+                  </span>
+                  Live location received
+                </p>
+                <p className="mt-2 flex items-center gap-2 text-sm text-ink-soft"><Clock size={15} /> Last updated {lastUpdated}. Refreshes every 5 seconds.</p>
+              </div>
+              <p className="rounded-2xl bg-lilac/60 px-4 py-3 text-sm text-ink-soft">
+                {location.latitude}, {location.longitude}
               </p>
             </div>
           )}
 
           {!loading && !location && (
-            <p style={{ color: '#b7791f' }}>
-              {error || 'Waiting for location...'}
+            <p className="flex items-start gap-2 font-medium text-[#8A5A00]">
+              <MapPin size={18} className="mt-0.5 shrink-0" /> {error || 'Waiting for location…'}
             </p>
           )}
 
-          {error && location && (
-            <p style={{ color: '#b7791f' }}>
-              {error}
-            </p>
-          )}
-        </div>
+          {error && location && <p className="mt-3 text-sm font-medium text-[#8A5A00]">{error}</p>}
+        </section>
 
         {location && (
-          <div style={{
-            background: 'white',
-            padding: '15px',
-            borderRadius: '14px',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
-          }}>
-
-            <h2>Live Location Map</h2>
-
+          <section className="isolate mt-5 overflow-hidden rounded-3xl bg-white shadow-soft" aria-label="Map">
             <MapContainer
-              center={[
-                location.latitude,
-                location.longitude
-              ]}
+              center={[location.latitude, location.longitude]}
               zoom={16}
               scrollWheelZoom={true}
-              style={{
-                height: '450px',
-                width: '100%',
-                borderRadius: '12px'
-              }}
+              style={{ height: '60vh', minHeight: '360px', width: '100%' }}
             >
               <TileLayer
-                attribution='&copy; OpenStreetMap contributors'
+                attribution="&copy; OpenStreetMap contributors"
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
 
               <CircleMarker
-                center={[
-                  location.latitude,
-                  location.longitude
-                ]}
+                center={[location.latitude, location.longitude]}
                 radius={12}
-                pathOptions={{
-                  color: '#c93c37',
-                  fillColor: '#e74c3c',
-                  fillOpacity: 0.8
-                }}
+                pathOptions={{ color: '#C42A40', fillColor: '#E5384F', fillOpacity: 0.85 }}
               >
-                <Popup>
-                  SafeHer User Location
-                </Popup>
+                <Popup>SafeHer user location</Popup>
               </CircleMarker>
             </MapContainer>
-
-          </div>
+          </section>
         )}
 
-        <div style={{
-          textAlign: 'center',
-          marginTop: '25px',
-          color: '#6b6550'
-        }}>
-          <p>♡ SafeHer India</p>
-          <p>Stay Safe. Stay Strong. Stay Confident.</p>
+        <div className="mt-8 text-center text-sm text-ink-soft">
+          <p className="font-display font-bold text-ink">SafeHer</p>
+          <p>Stay safe. Stay strong. Stay confident.</p>
         </div>
-
-      </div>
+      </main>
     </div>
   )
 }

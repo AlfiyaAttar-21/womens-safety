@@ -1,34 +1,19 @@
-
 import { useState } from 'react'
 import api from '../services/api'
-import {
-  ShieldCheck,
-  Phone,
-  Lock,
-  Eye,
-  EyeOff,
-  ArrowRight
-} from 'lucide-react'
+import { Phone, Lock } from 'lucide-react'
+import AuthLayout from '../components/AuthLayout'
+import Field from '../components/Field'
+import Alert from '../components/Alert'
+import Button from '../components/Button'
 
 function Login() {
-
-  const [showPassword, setShowPassword] = useState(false)
-
-  const [formData, setFormData] = useState({
-    phoneNumber: '',
-    password: ''
-  })
-
+  const [formData, setFormData] = useState({ phoneNumber: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const handleChange = (e) => {
     const { name, value } = e.target
-
-    setFormData({
-      ...formData,
-      [name]: value
-    })
+    setFormData({ ...formData, [name]: value })
   }
 
   const handleLogin = async (e) => {
@@ -48,34 +33,15 @@ function Login() {
     try {
       setLoading(true)
 
-      const response = await api.post(
-        '/users/login',
-        formData
-      )
+      const response = await api.post('/users/login', formData)
 
       // Save login tokens
-      sessionStorage.setItem(
-        'safeherAccessToken',
-        response.data.accessToken
-      )
-
-      sessionStorage.setItem(
-        'safeherRefreshToken',
-        response.data.refreshToken
-      )
-
-      sessionStorage.setItem(
-        'safeherUserId',
-        response.data.userId
-      )
-
-      sessionStorage.setItem(
-        'safeherUserName',
-        response.data.name
-      )
+      sessionStorage.setItem('safeherAccessToken', response.data.accessToken)
+      sessionStorage.setItem('safeherRefreshToken', response.data.refreshToken)
+      sessionStorage.setItem('safeherUserId', response.data.userId)
+      sessionStorage.setItem('safeherUserName', response.data.name)
 
       window.location.href = '/dashboard'
-
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -87,98 +53,33 @@ function Login() {
   }
 
   return (
-    <div className="login-container">
-
-      <div className="login-circle circle-one"></div>
-      <div className="login-circle circle-two"></div>
-
-      <div className="login-box">
-
-        <div className="login-logo">
-          <ShieldCheck size={42} />
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Log in to your SafeHer account."
+      footer={<>New to SafeHer? <a href="/register" className="font-semibold text-ink underline">Create an account</a></>}
+    >
+      <form onSubmit={handleLogin} noValidate>
+        <Field
+          label="Phone number" icon={Phone} type="tel" name="phoneNumber"
+          placeholder="10-digit mobile number" inputMode="numeric" autoComplete="tel"
+          value={formData.phoneNumber} onChange={handleChange} maxLength="10" required
+        />
+        <Field
+          label="Password" icon={Lock} type="password" toggle name="password"
+          placeholder="Your password" autoComplete="current-password"
+          value={formData.password} onChange={handleChange} required
+        />
+        <div className="-mt-1 mb-5 text-right text-sm">
+          <a href="/forgot-password" className="font-semibold text-ink-soft underline">Forgot password?</a>
         </div>
 
-        <h1>Welcome Back!</h1>
+        <Alert>{error}</Alert>
 
-        <p className="login-subtitle">
-          Login to your SafeHer account
-        </p>
-
-        <form onSubmit={handleLogin}>
-
-          <label>Phone Number</label>
-
-          <div className="login-input-box">
-            <Phone size={19} />
-
-            <input
-              type="tel"
-              name="phoneNumber"
-              placeholder="Enter 10-digit mobile number"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-              maxLength="10"
-              required
-            />
-          </div>
-
-          <label>Password</label>
-
-          <div className="login-input-box">
-            <Lock size={19} />
-
-            <input
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              placeholder="Enter your password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-
-            <button
-              type="button"
-              className="password-toggle"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-            </button>
-          </div>
-
-          <div className="forgot-password">
-         <a href="/forgot-password">Forgot Password?</a>
-        </div>
-
-          {error && (
-            <p style={{ color: '#c93c37', fontSize: '14px' }}>
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            className="login-submit-btn"
-            disabled={loading}
-          >
-            {loading ? 'Logging in...' : 'Login to Account'}
-            {!loading && <ArrowRight size={19} />}
-          </button>
-
-        </form>
-
-        <p className="register-text">
-          Don't have an account?
-          <a href="/register"> Sign Up</a>
-        </p>
-
-        <div className="login-security">
-          <ShieldCheck size={17} />
-          Your safety and privacy matter to us.
-        </div>
-
-      </div>
-
-    </div>
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? 'Logging in…' : 'Log in'}
+        </Button>
+      </form>
+    </AuthLayout>
   )
 }
 

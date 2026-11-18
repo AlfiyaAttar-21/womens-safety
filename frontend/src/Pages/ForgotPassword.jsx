@@ -1,15 +1,12 @@
-
 import { useState } from 'react'
 import api from '../services/api'
-import {
-  ShieldCheck,
-  Phone,
-  Lock,
-  ArrowLeft
-} from 'lucide-react'
+import { Phone, Lock, KeyRound, ArrowLeft } from 'lucide-react'
+import AuthLayout from '../components/AuthLayout'
+import Field from '../components/Field'
+import Alert from '../components/Alert'
+import Button from '../components/Button'
 
 function ForgotPassword() {
-
   const [phoneNumber, setPhoneNumber] = useState('')
   const [otp, setOtp] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -21,7 +18,6 @@ function ForgotPassword() {
   const [message, setMessage] = useState('')
 
   const handleSendOtp = async () => {
-
     setError('')
     setMessage('')
 
@@ -33,10 +29,7 @@ function ForgotPassword() {
     try {
       setLoading(true)
 
-      const response = await api.post(
-        '/users/forgot-password',
-        { phoneNumber }
-      )
+      const response = await api.post('/users/forgot-password', { phoneNumber })
 
       setOtpSent(true)
 
@@ -44,7 +37,6 @@ function ForgotPassword() {
         response.data.message ||
         'If your verified account exists, an OTP has been sent.'
       )
-
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -56,7 +48,6 @@ function ForgotPassword() {
   }
 
   const handleResetPassword = async (e) => {
-
     e.preventDefault()
 
     setError('')
@@ -80,26 +71,19 @@ function ForgotPassword() {
     try {
       setLoading(true)
 
-      const response = await api.post(
-        '/users/reset-password',
-        {
-          phoneNumber,
-          otp,
-          newPassword,
-          confirmPassword
-        }
-      )
+      const response = await api.post('/users/reset-password', {
+        phoneNumber,
+        otp,
+        newPassword,
+        confirmPassword
+      })
 
-      setMessage(
-        response.data.message ||
-        'Password reset successful.'
-      )
+      setMessage(response.data.message || 'Password reset successful.')
 
       setOtpSent(false)
       setOtp('')
       setNewPassword('')
       setConfirmPassword('')
-
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -111,149 +95,40 @@ function ForgotPassword() {
   }
 
   return (
-    <div className="login-container">
-
-      <div className="login-circle circle-one"></div>
-      <div className="login-circle circle-two"></div>
-
-      <div className="login-box">
-
-        <div className="login-logo">
-          <ShieldCheck size={42} />
+    <AuthLayout
+      title="Reset your password"
+      subtitle={otpSent ? 'Enter the code we sent and choose a new password.' : 'We’ll send a code to your registered phone number.'}
+      footer={<a href="/login" className="inline-flex items-center gap-1 font-semibold text-ink underline"><ArrowLeft size={15} /> Back to log in</a>}
+    >
+      {!otpSent && (
+        <div>
+          <Field label="Phone number" icon={Phone} type="tel" placeholder="10-digit mobile number" inputMode="numeric"
+            value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} maxLength="10" />
+          <Alert>{error}</Alert>
+          <Alert type="success">{message}</Alert>
+          <Button type="button" className="w-full" onClick={handleSendOtp} disabled={loading}>
+            {loading ? 'Sending code…' : 'Send code'}
+          </Button>
         </div>
+      )}
 
-        <h1>Forgot Password?</h1>
-
-        <p className="login-subtitle">
-          Reset your SafeHer account password
-        </p>
-
-        {!otpSent && (
-
-          <div>
-
-            <label>Phone Number</label>
-
-            <div className="login-input-box">
-              <Phone size={19} />
-
-              <input
-                type="tel"
-                placeholder="Enter 10-digit mobile number"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                maxLength="10"
-              />
-            </div>
-
-            <button
-              type="button"
-              className="login-submit-btn"
-              onClick={handleSendOtp}
-              disabled={loading}
-            >
-              {loading ? 'Sending OTP...' : 'Send OTP'}
-            </button>
-
-          </div>
-        )}
-
-        {otpSent && (
-
-          <form onSubmit={handleResetPassword}>
-
-            <label>Phone Number</label>
-
-            <div className="login-input-box">
-              <Phone size={19} />
-
-              <input
-                type="tel"
-                value={phoneNumber}
-                readOnly
-              />
-            </div>
-
-            <label>Enter OTP</label>
-
-            <div className="login-input-box">
-              <Lock size={19} />
-
-              <input
-                type="text"
-                placeholder="Enter 6-digit OTP"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                maxLength="6"
-                required
-              />
-            </div>
-
-            <label>New Password</label>
-
-            <div className="login-input-box">
-              <Lock size={19} />
-
-              <input
-                type="password"
-                placeholder="Enter new password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <label>Confirm Password</label>
-
-            <div className="login-input-box">
-              <Lock size={19} />
-
-              <input
-                type="password"
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="login-submit-btn"
-              disabled={loading}
-            >
-              {loading ? 'Resetting Password...' : 'Reset Password'}
-            </button>
-
-          </form>
-        )}
-
-        {error && (
-          <p style={{ color: '#c93c37', fontSize: '14px' }}>
-            {error}
-          </p>
-        )}
-
-        {message && (
-          <p style={{ color: '#23834a', fontSize: '14px' }}>
-            {message}
-          </p>
-        )}
-
-        <p className="register-text">
-          <a href="/login">
-            <ArrowLeft size={15} /> Back to Login
-          </a>
-        </p>
-
-        <div className="login-security">
-          <ShieldCheck size={17} />
-          Your safety and privacy matter to us.
-        </div>
-
-      </div>
-
-    </div>
+      {otpSent && (
+        <form onSubmit={handleResetPassword} noValidate>
+          <Field label="Phone number" icon={Phone} type="tel" value={phoneNumber} readOnly />
+          <Field label="Verification code" icon={KeyRound} placeholder="6-digit code" inputMode="numeric"
+            autoComplete="one-time-code" value={otp} onChange={(e) => setOtp(e.target.value)} maxLength="6" required />
+          <Field label="New password" icon={Lock} type="password" toggle placeholder="At least 8 characters"
+            autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+          <Field label="Confirm password" icon={Lock} type="password" toggle placeholder="Repeat new password"
+            autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+          <Alert>{error}</Alert>
+          <Alert type="success">{message}</Alert>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Resetting password…' : 'Reset password'}
+          </Button>
+        </form>
+      )}
+    </AuthLayout>
   )
 }
 

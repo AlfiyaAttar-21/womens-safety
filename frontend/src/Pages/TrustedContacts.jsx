@@ -1,22 +1,15 @@
-
 import { useEffect, useState } from 'react'
 import {
-  ShieldCheck,
-  Users,
-  UserPlus,
-  Phone,
-  Pencil,
-  Trash2,
-  Heart,
-  ArrowLeft,
-  X,
-  UserRound,
-  CheckCircle,
-  Mail,
-  RefreshCw
+  Users, UserPlus, Phone, Pencil, Trash2, X, UserRound,
+  CheckCircle, Mail, RefreshCw, ShieldCheck,
 } from 'lucide-react'
-import '../App.css'
 import api from '../services/api'
+import AppShell from '../components/AppShell'
+import Field from '../components/Field'
+import Button from '../components/Button'
+import Badge from '../components/Badge'
+import Card from '../components/Card'
+import { SelectField, PageTitle } from '../components/FormBits'
 
 function TrustedContacts() {
   const [contacts, setContacts] = useState([])
@@ -181,373 +174,122 @@ function TrustedContacts() {
     window.location.href = '/login'
   }
 
+const consentTone = (status) =>
+    status === 'PENDING' ? 'pending' : /ACCEPT|CONFIRM|GRANT/i.test(status || '') ? 'safe' : 'neutral'
+
   return (
-    <div className="tc-page">
+    <AppShell active="contacts" onLogout={logout}>
+      <PageTitle
+        title="Trusted contacts"
+        subtitle="The people who are alerted when you need help. Each one has to agree first."
+      >
+        <span className="inline-flex items-center gap-2 rounded-full bg-lilac px-4 py-2 text-sm font-semibold">
+          <Users size={17} /> {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
+        </span>
+      </PageTitle>
 
-      {/* Navbar */}
-      <nav className="tc-navbar">
-
-        <a href="/dashboard" className="tc-brand">
-          <div className="tc-brand-icon">
-            <ShieldCheck size={25} />
-          </div>
-          <span>SafeHer</span>
-        </a>
-
-        <div className="tc-nav-right">
-
-          <a href="/dashboard" className="tc-dashboard-link">
-            <ArrowLeft size={17} />
-            Dashboard
-          </a>
-
-          <button
-            className="tc-logout-btn"
-            onClick={logout}
-          >
-            Logout
-          </button>
-
-        </div>
-      </nav>
-
-      {/* Page Header */}
-      <section className="tc-hero">
-
-        <div className="tc-hero-content">
-
-          <div className="tc-small-label">
-            <Heart size={15} />
-            YOUR SAFETY CIRCLE
-          </div>
-
-          <h1>Trusted Contacts</h1>
-
-          <p>
-            Your safety starts with people you trust.
-            Add your loved ones who can support you during an emergency.
+      <div className="grid gap-8 lg:grid-cols-[380px_1fr]">
+        {/* Form */}
+        <Card className="h-fit">
+          <h2 className="flex items-center gap-2 font-display text-xl font-bold">
+            {editContactId !== null ? <Pencil size={20} /> : <UserPlus size={20} />}
+            {editContactId !== null ? 'Update contact' : 'Add a contact'}
+          </h2>
+          <p className="mb-6 mt-1 text-sm text-ink-soft">
+            {editContactId !== null ? 'Change the details below.' : 'We’ll send them a request to confirm.'}
           </p>
 
-          <div className="tc-hero-note">
-            <ShieldCheck size={18} />
-            <span>Your trusted people, always close to you.</span>
-          </div>
+          <form onSubmit={handleSubmit} noValidate>
+            <Field label="Name" icon={UserRound} placeholder="Full name" value={name} maxLength="100"
+              onChange={(e) => setName(e.target.value)} required />
+            <Field label="Mobile number" icon={Phone} type="tel" inputMode="numeric" placeholder="10-digit number"
+              value={mobile} maxLength="10" onChange={(e) => setMobile(e.target.value.replace(/[^0-9]/g, ''))} required />
+            <Field label="Email (optional)" icon={Mail} type="email" placeholder="name@example.com"
+              value={email} maxLength="150" onChange={(e) => setEmail(e.target.value)} />
+            <SelectField label="Relationship" value={relationship} onChange={(e) => setRelationship(e.target.value)} required>
+              <option value="">Select relationship</option>
+              <option value="Family">Family</option>
+              <option value="Friend">Friend</option>
+              <option value="Relative">Relative</option>
+              <option value="Colleague">Colleague</option>
+              <option value="Other">Other</option>
+            </SelectField>
 
-        </div>
-
-        <div className="tc-hero-decoration">
-          <div className="tc-hero-circle">
-            <Users size={65} strokeWidth={1.4} />
-            <Heart size={25} className="tc-heart-icon" />
-          </div>
-        </div>
-
-      </section>
-
-      {/* Main Content */}
-      <main className="tc-main">
-
-        {/* Form Section */}
-        <section className="tc-form-card">
-
-          <div className="tc-section-heading">
-
-            <div className="tc-heading-icon">
-              {editContactId !== null
-                ? <Pencil size={22} />
-                : <UserPlus size={22} />
-              }
-            </div>
-
-            <div>
-              <h2>
-                {editContactId !== null
-                  ? 'Update Contact'
-                  : 'Add New Contact'}
-              </h2>
-
-              <p>
-                {editContactId !== null
-                  ? 'Update your trusted contact details.'
-                  : 'Add someone you can count on.'}
-              </p>
-            </div>
-
-          </div>
-
-          <form onSubmit={handleSubmit} className="tc-form">
-
-            <div className="tc-form-group">
-              <label htmlFor="contactName">Contact Name *</label>
-
-              <input
-                id="contactName"
-                type="text"
-                placeholder="Enter full name"
-                value={name}
-                maxLength="100"
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="tc-form-group">
-
-              <label htmlFor="contactMobile">Mobile Number *</label>
-
-              <div className="tc-input-with-icon">
-                <Phone size={18} />
-
-                <input
-                  id="contactMobile"
-                  type="tel"
-                  placeholder="Enter 10-digit mobile number"
-                  value={mobile}
-                  maxLength="10"
-                  onChange={(e) =>
-                    setMobile(e.target.value.replace(/[^0-9]/g, ''))
-                  }
-                  required
-                />
-              </div>
-
-            </div>
-
-            <div className="tc-form-group">
-
-              <label htmlFor="contactEmail">Email (Optional)</label>
-
-              <div className="tc-input-with-icon">
-                <Mail size={18} />
-
-                <input
-                  id="contactEmail"
-                  type="email"
-                  placeholder="Enter email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  maxLength="150"
-                />
-              </div>
-
-            </div>
-
-            <div className="tc-form-group">
-
-              <label htmlFor="contactRelationship">Relationship *</label>
-
-              <select
-                id="contactRelationship"
-                value={relationship}
-                onChange={(e) => setRelationship(e.target.value)}
-                required
-              >
-                <option value="">Select relationship</option>
-                <option value="Family">Family</option>
-                <option value="Friend">Friend</option>
-                <option value="Relative">Relative</option>
-                <option value="Colleague">Colleague</option>
-                <option value="Other">Other</option>
-              </select>
-
-            </div>
-
-            <div className="tc-form-buttons">
-
-              <button
-                type="submit"
-                className="tc-submit-btn"
-                disabled={saving}
-              >
-                {editContactId !== null
-                  ? <CheckCircle size={18} />
-                  : <UserPlus size={18} />
-                }
-
-                {saving
-                  ? 'Please wait...'
-                  : editContactId !== null
-                    ? 'Update Contact'
-                    : 'Add Contact'
-                }
-              </button>
-
+            <div className="flex gap-3">
+              <Button type="submit" className="flex-1" disabled={saving}>
+                {editContactId !== null ? <CheckCircle size={17} /> : <UserPlus size={17} />}
+                {saving ? 'Please wait…' : editContactId !== null ? 'Update contact' : 'Add contact'}
+              </Button>
               {editContactId !== null && (
-                <button
-                  type="button"
-                  className="tc-cancel-btn"
-                  onClick={resetForm}
-                >
-                  <X size={18} />
-                  Cancel
-                </button>
+                <Button type="button" variant="secondary" onClick={resetForm}><X size={17} /> Cancel</Button>
               )}
-
             </div>
-
           </form>
+        </Card>
 
-        </section>
-
-        {/* Saved Contacts */}
-        <section className="tc-saved-section">
-
-          <div className="tc-saved-heading">
-
-            <div>
-              <h2>My Safety Circle</h2>
-              <p>People who are there for you when you need them.</p>
-            </div>
-
-            <div className="tc-total-count">
-              <Users size={19} />
-              <span>{contacts.length} Contacts</span>
-            </div>
-
-          </div>
-
+        {/* List */}
+        <section aria-label="Saved contacts">
           {loading ? (
-
-            <div className="tc-empty-state">
-              <p>Loading your trusted contacts...</p>
+            <div className="space-y-4" aria-busy="true">
+              {[1, 2].map((n) => <div key={n} className="h-36 animate-pulse rounded-3xl bg-ink/5" />)}
             </div>
-
           ) : contacts.length === 0 ? (
-
-            <div className="tc-empty-state">
-
-              <div className="tc-empty-icon">
-                <Users size={42} />
-              </div>
-
-              <h3>Your safety circle is waiting!</h3>
-
-              <p>
-                You haven't added any trusted contacts yet.
-                Add your family or friends to get started.
-              </p>
-
+            <div className="rounded-3xl border-2 border-dashed border-ink/15 p-10 text-center">
+              <Users className="mx-auto text-ink-faint" size={40} />
+              <h3 className="mt-4 font-display text-xl font-bold">No contacts yet</h3>
+              <p className="mx-auto mt-2 max-w-sm text-ink-soft">Add a family member or friend. They will get a request to confirm.</p>
             </div>
-
           ) : (
-
-            <div className="tc-contacts-grid">
-
+            <div className="grid gap-4 sm:grid-cols-2">
               {contacts.map((contact) => (
-
-                <div className="tc-contact-card" key={contact.id}>
-
-                  <div className="tc-contact-top">
-
-                    <div className="tc-contact-avatar">
-                      <UserRound size={27} />
-                    </div>
-
-                    <span className="tc-contact-badge">
-                      {contact.relationship || 'Other'}
+                <Card key={contact.id} className="flex flex-col">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="grid h-12 w-12 place-items-center rounded-full bg-lilac font-display text-lg font-bold">
+                      {(contact.name || '?').charAt(0).toUpperCase()}
                     </span>
-
+                    <Badge>{contact.relationship || 'Other'}</Badge>
                   </div>
 
-                  <h3>{contact.name}</h3>
-
-                  <div className="tc-contact-mobile">
-                    <Phone size={16} />
-                    <span>{contact.phone}</span>
-                  </div>
-
+                  <h3 className="mt-4 font-display text-lg font-bold">{contact.name}</h3>
+                  <p className="mt-2 flex items-center gap-2 text-sm text-ink-soft"><Phone size={15} /> {contact.phone}</p>
                   {contact.email && (
-                    <div className="tc-contact-mobile">
-                      <Mail size={16} />
-                      <span>{contact.email}</span>
-                    </div>
+                    <p className="mt-1 flex items-center gap-2 break-all text-sm text-ink-soft"><Mail size={15} /> {contact.email}</p>
                   )}
 
-                  <p style={{ fontSize: '13px', marginTop: '10px' }}>
-                    Consent: {contact.consentStatus}
-                  </p>
-
-                  <div className="tc-contact-divider"></div>
-
-                  <div className="tc-contact-actions">
-
-                    <button
-                      type="button"
-                      className="tc-edit-btn"
-                      onClick={() => editContact(contact)}
-                    >
-                      <Pencil size={15} />
-                      Edit
-                    </button>
-
-                    <button
-                      type="button"
-                      className="tc-delete-btn"
-                      onClick={() => deleteContact(contact)}
-                    >
-                      <Trash2 size={15} />
-                      Delete
-                    </button>
-
+                  <div className="mt-4">
+                    <Badge tone={consentTone(contact.consentStatus)}>
+                      <span className="capitalize">{String(contact.consentStatus || 'unknown').toLowerCase()}</span>
+                    </Badge>
                   </div>
 
-                  {contact.consentStatus === 'PENDING' && (
-
-                    <button
-                      type="button"
-                      className="tc-edit-btn"
-                      style={{ marginTop: '12px', width: '100%' }}
-                      onClick={() => resendConsent(contact)}
-                    >
-                      <RefreshCw size={15} />
-                      Resend Consent
+                  <div className="mt-5 flex flex-wrap gap-2 border-t border-ink/10 pt-4">
+                    <button type="button" onClick={() => editContact(contact)}
+                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-4 text-sm font-semibold ring-1 ring-ink/15 hover:bg-lilac">
+                      <Pencil size={15} /> Edit
                     </button>
-
-                  )}
-
-                </div>
-
+                    <button type="button" onClick={() => deleteContact(contact)}
+                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-sos ring-1 ring-sos/30 hover:bg-[#FBDDE2]">
+                      <Trash2 size={15} /> Delete
+                    </button>
+                    {contact.consentStatus === 'PENDING' && (
+                      <button type="button" onClick={() => resendConsent(contact)}
+                        className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-semibold text-cream hover:bg-ink-soft">
+                        <RefreshCw size={15} /> Resend request
+                      </button>
+                    )}
+                  </div>
+                </Card>
               ))}
-
             </div>
-
           )}
 
+          <p className="mt-6 flex items-start gap-3 rounded-2xl bg-lilac/60 p-4 text-sm text-ink-soft">
+            <ShieldCheck size={20} className="mt-0.5 shrink-0 text-ink" />
+            Tell your contacts you’ve added them, so they know what to do if they get an alert.
+          </p>
         </section>
-
-        {/* Safety Note */}
-        <div className="tc-safety-note">
-
-          <ShieldCheck size={23} />
-
-          <div>
-            <h3>A little reminder</h3>
-
-            <p>
-              Make sure your trusted contacts know that you have added them
-              to your safety circle.
-            </p>
-          </div>
-
-        </div>
-
-      </main>
-
-      {/* Footer */}
-      <footer className="tc-footer">
-
-        <div className="tc-footer-brand">
-          <ShieldCheck size={21} />
-          <span>SafeHer</span>
-        </div>
-
-        <p>Stay Safe. Stay Strong. Stay Confident.</p>
-
-        <span>© 2026 SafeHer. All rights reserved.</span>
-
-      </footer>
-
-    </div>
+      </div>
+    </AppShell>
   )
 }
 

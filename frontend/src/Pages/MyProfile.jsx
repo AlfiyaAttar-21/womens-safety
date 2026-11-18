@@ -1,18 +1,14 @@
-
 import { useState } from 'react'
 import {
-  ShieldCheck,
-  UserRound,
-  Mail,
-  Phone,
-  ArrowLeft,
-  Pencil,
-  Save,
-  X,
-  LockKeyhole,
-  CheckCircle2
+  ShieldCheck, UserRound, Mail, Phone, Pencil, Save, X,
+  LockKeyhole, CheckCircle2,
 } from 'lucide-react'
-import '../App.css'
+import AppShell from '../components/AppShell'
+import Field from '../components/Field'
+import Button from '../components/Button'
+import Card from '../components/Card'
+import Alert from '../components/Alert'
+import { PageTitle } from '../components/FormBits'
 
 function MyProfile() {
   const savedName = sessionStorage.getItem('safeherUserName') || ''
@@ -83,268 +79,74 @@ function MyProfile() {
     ? name.trim().charAt(0).toUpperCase()
     : 'U'
 
-  return (
-    <div className="mp-page">
+return (
+    <AppShell active="profile" onLogout={handleLogout}>
+      <PageTitle title="My profile" subtitle="Keep your account details up to date." />
 
-      {/* Navbar */}
-      <nav className="mp-navbar">
+      <Alert type="success">{success ? 'Profile details updated for this session.' : ''}</Alert>
 
-        <a href="/dashboard" className="mp-brand">
-          <div className="mp-brand-icon">
-            <ShieldCheck size={25} />
-          </div>
-          <span>SafeHer</span>
-        </a>
-
-        <div className="mp-nav-actions">
-
-          <a href="/dashboard" className="mp-dashboard-link">
-            <ArrowLeft size={17} />
-            Dashboard
-          </a>
-
-          <button
-            className="mp-logout-btn"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
-
-        </div>
-
-      </nav>
-
-      {/* Hero */}
-      <section className="mp-hero">
-
-        <div className="mp-hero-content">
-          <span className="mp-eyebrow">
-            <UserRound size={15} />
-            ACCOUNT SETTINGS
+      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+        <Card className="h-fit text-center">
+          <span className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-ink font-display text-4xl font-extrabold text-cream">
+            {initial}
           </span>
+          <h2 className="mt-4 font-display text-xl font-bold">{name || 'SafeHer User'}</h2>
+          <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-ink-soft"><ShieldCheck size={15} /> SafeHer member</p>
 
-          <h1>My Profile</h1>
+          <ul className="mt-6 space-y-4 border-t border-ink/10 pt-5 text-left text-sm">
+            <li className="flex gap-3">
+              <LockKeyhole size={18} className="mt-0.5 shrink-0" />
+              <span><strong className="block">Protected account</strong><span className="text-ink-soft">You sign in with a password and one-time codes.</span></span>
+            </li>
+            <li className="flex gap-3">
+              <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
+              <span><strong className="block">Keep details current</strong><span className="text-ink-soft">So your contacts can reach you.</span></span>
+            </li>
+          </ul>
+        </Card>
 
-          <p>
-            Manage your personal information and keep your
-            SafeHer account details up to date.
-          </p>
-        </div>
-
-        <div className="mp-hero-icon">
-          <UserRound size={65} strokeWidth={1.4} />
-        </div>
-
-      </section>
-
-      {/* Main Content */}
-      <main className="mp-main">
-
-        <div className="mp-breadcrumb">
-          <a href="/dashboard">Dashboard</a>
-          <span>/</span>
-          <span>My Profile</span>
-        </div>
-
-        {success && (
-          <div className="mp-success-message">
-            <CheckCircle2 size={19} />
-            Profile details updated in this session.
-          </div>
-        )}
-
-        <div className="mp-layout">
-
-          {/* Profile Card */}
-          <aside className="mp-side-card">
-
-            <div className="mp-avatar">
-              {initial}
+        <Card>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display text-xl font-bold">Personal information</h2>
+              <p className="text-sm text-ink-soft">{editMode ? 'Make your changes and save.' : 'Select edit to change your details.'}</p>
             </div>
-
-            <h2>{name || 'SafeHer User'}</h2>
-
-            <p className="mp-account-label">
-              <ShieldCheck size={15} />
-              SafeHer Member
-            </p>
-
-            <div className="mp-side-divider"></div>
-
-            <div className="mp-side-info">
-              <LockKeyhole size={17} />
-              <div>
-                <strong>Account Security</strong>
-                <span>Your account is protected with login authentication.</span>
-              </div>
-            </div>
-
-            <div className="mp-side-info">
-              <CheckCircle2 size={17} />
-              <div>
-                <strong>Personal Details</strong>
-                <span>Keep your contact information up to date.</span>
-              </div>
-            </div>
-
-          </aside>
-
-          {/* Personal Information */}
-          <section className="mp-form-card">
-
-            <div className="mp-form-heading">
-
-              <div>
-                <h2>Personal Information</h2>
-                <p>View and manage your account details.</p>
-              </div>
-
-              {!editMode && (
-                <button
-                  type="button"
-                  className="mp-edit-btn"
-                  onClick={handleEdit}
-                >
-                  <Pencil size={16} />
-                  Edit Profile
-                </button>
-              )}
-
-            </div>
-
-            <form onSubmit={handleSubmit}>
-
-              <div className="mp-field">
-
-                <label htmlFor="mp-name">
-                  <UserRound size={16} />
-                  Full Name
-                </label>
-
-                <input
-                  id="mp-name"
-                  type="text"
-                  placeholder="Enter your full name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  disabled={!editMode}
-                  maxLength={100}
-                  required
-                />
-
-              </div>
-
-              <div className="mp-field">
-
-                <label htmlFor="mp-email">
-                  <Mail size={16} />
-                  Email Address
-                </label>
-
-                <input
-                  id="mp-email"
-                  type="email"
-                  placeholder="Enter your email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={!editMode}
-                  maxLength={100}
-                  required
-                />
-
-              </div>
-
-              <div className="mp-field">
-
-                <label htmlFor="mp-mobile">
-                  <Phone size={16} />
-                  Mobile Number
-                </label>
-
-                <input
-                  id="mp-mobile"
-                  type="tel"
-                  placeholder="Enter 10-digit mobile number"
-                  value={mobile}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '')
-                    if (value.length <= 10) {
-                      setMobile(value)
-                    }
-                  }}
-                  disabled={!editMode}
-                  maxLength={10}
-                  required
-                />
-
-              </div>
-
-              {editMode && (
-                <div className="mp-form-actions">
-
-                  <button
-                    type="submit"
-                    className="mp-save-btn"
-                  >
-                    <Save size={17} />
-                    Save Changes
-                  </button>
-
-                  <button
-                    type="button"
-                    className="mp-cancel-btn"
-                    onClick={handleCancel}
-                  >
-                    <X size={17} />
-                    Cancel
-                  </button>
-
-                </div>
-              )}
-
-            </form>
-
             {!editMode && (
-              <div className="mp-readonly-note">
-                <LockKeyhole size={15} />
-                Click Edit Profile to update your information.
+              <Button type="button" variant="secondary" onClick={handleEdit}>
+                <Pencil size={16} /> Edit profile
+              </Button>
+            )}
+          </div>
+
+          <form onSubmit={handleSubmit} noValidate>
+            <Field label="Full name" icon={UserRound} placeholder="Your full name" value={name}
+              onChange={(e) => setName(e.target.value)} disabled={!editMode} maxLength={100} required />
+            <Field label="Email address" icon={Mail} type="email" placeholder="you@example.com" value={email}
+              onChange={(e) => setEmail(e.target.value)} disabled={!editMode} maxLength={100} required />
+            <Field label="Mobile number" icon={Phone} type="tel" inputMode="numeric" placeholder="10-digit number" value={mobile}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '')
+                if (value.length <= 10) {
+                  setMobile(value)
+                }
+              }}
+              disabled={!editMode} maxLength={10} required />
+
+            {editMode && (
+              <div className="flex flex-wrap gap-3">
+                <Button type="submit"><Save size={17} /> Save changes</Button>
+                <Button type="button" variant="secondary" onClick={handleCancel}><X size={17} /> Cancel</Button>
               </div>
             )}
+          </form>
+        </Card>
+      </div>
 
-          </section>
-
-        </div>
-
-        {/* Privacy Notice */}
-        <div className="mp-privacy-notice">
-          <ShieldCheck size={21} />
-
-          <div>
-            <strong>Your Privacy Matters</strong>
-            <p>
-              Keep your account details accurate. Never share your
-              password, OTP or security PIN with anyone.
-            </p>
-          </div>
-        </div>
-
-      </main>
-
-      {/* Footer */}
-      <footer className="mp-footer">
-
-        <div className="mp-footer-brand">
-          <ShieldCheck size={21} />
-          SafeHer
-        </div>
-
-        <p>Stay Safe. Stay Strong. Stay Confident.</p>
-
-        <span>© 2026 SafeHer. All rights reserved.</span>
-
-      </footer>
-
-    </div>
+      <p className="mt-6 flex items-start gap-3 rounded-2xl bg-lilac/60 p-4 text-sm text-ink-soft">
+        <ShieldCheck size={20} className="mt-0.5 shrink-0 text-ink" />
+        Never share your password, one-time codes or PINs with anyone, including people who say they are from SafeHer.
+      </p>
+    </AppShell>
   )
 }
 
