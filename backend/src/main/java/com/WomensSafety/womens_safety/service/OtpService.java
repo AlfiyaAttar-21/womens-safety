@@ -27,7 +27,7 @@ public class OtpService {
     private final OtpRepository otpRepository;
     private final PasswordResetOtpRepository passwordResetOtpRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;
+    private final TextBeeService textBeeService;
     private final UserRepository userRepository;
 
     private final SecureRandom random = new SecureRandom();
@@ -36,31 +36,23 @@ public class OtpService {
             OtpRepository otpRepository,
             PasswordResetOtpRepository passwordResetOtpRepository,
             PasswordEncoder passwordEncoder,
-            EmailService emailService,
+            TextBeeService textBeeService,
             UserRepository userRepository) {
 
         this.otpRepository = otpRepository;
         this.passwordResetOtpRepository = passwordResetOtpRepository;
         this.passwordEncoder = passwordEncoder;
-        this.emailService = emailService;
+        this.textBeeService = textBeeService;
         this.userRepository = userRepository;
     }
 
-    // Generate secure 6-digit OTP
     private String generateOtp() {
         return String.format("%06d", random.nextInt(1_000_000));
     }
 
-    // Registration OTP - email passed directly
+    // Registration OTP through SMS
     @Transactional
-    public void sendOtp(String phoneNumber, String email) {
-
-        if (email == null || email.isBlank()) {
-            throw new ApiException(
-                    HttpStatus.BAD_REQUEST,
-                    "Registered email address not found"
-            );
-        }
+    public void sendOtp(String phoneNumber) {
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -89,14 +81,10 @@ public class OtpService {
 
         otpRepository.save(otp);
 
-        // Send registration OTP through Brevo
-        emailService.send(
-                email,
-                "Your SafeHer verification code",
-                "Your SafeHer verification code is "
-                        + code
-                        + ". It expires in "
-                        + EXPIRY_MINUTES
+        textBeeService.sendSms(
+                phoneNumber,
+                "Your SafeHer registration OTP is " + code
+                        + ". It expires in " + EXPIRY_MINUTES
                         + " minutes. Do not share it with anyone."
         );
     }
@@ -121,7 +109,6 @@ public class OtpService {
 
         if (otp.getExpiresAt() == null ||
                 !otp.getExpiresAt().isAfter(LocalDateTime.now())) {
-
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "OTP expired. Request a new one"
@@ -136,7 +123,6 @@ public class OtpService {
         }
 
         if (!passwordEncoder.matches(code, otp.getCodeHash())) {
-
             otp.setAttempts(otp.getAttempts() + 1);
             otpRepository.save(otp);
 
@@ -149,7 +135,7 @@ public class OtpService {
         otpRepository.delete(otp);
     }
 
-    // Send Forgot Password OTP
+    // Forgot Password OTP through SMS
     @Transactional
     public void sendPasswordResetOtp(String phoneNumber) {
 
@@ -158,15 +144,6 @@ public class OtpService {
                         HttpStatus.BAD_REQUEST,
                         "User not found"
                 ));
-
-        String email = user.getEmail();
-
-        if (email == null || email.isBlank()) {
-            throw new ApiException(
-                    HttpStatus.BAD_REQUEST,
-                    "Registered email address not found"
-            );
-        }
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -178,7 +155,6 @@ public class OtpService {
                 otp.getSentAt()
                         .plusSeconds(RESEND_COOLDOWN_SECONDS)
                         .isAfter(now)) {
-
             throw new ApiException(
                     HttpStatus.TOO_MANY_REQUESTS,
                     "Please wait 60 seconds before requesting another OTP"
@@ -195,14 +171,10 @@ public class OtpService {
 
         passwordResetOtpRepository.save(otp);
 
-        // Send password reset OTP through Brevo
-        emailService.send(
-                email,
-                "Your SafeHer password reset code",
-                "Your SafeHer password reset OTP is "
-                        + code
-                        + ". It expires in "
-                        + EXPIRY_MINUTES
+        textBeeService.sendSms(
+                phoneNumber,
+                "Your SafeHer password reset OTP is " + code
+                        + ". It expires in " + EXPIRY_MINUTES
                         + " minutes. Do not share it with anyone."
         );
     }
@@ -229,7 +201,6 @@ public class OtpService {
 
         if (otp.getExpiresAt() == null ||
                 !otp.getExpiresAt().isAfter(LocalDateTime.now())) {
-
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "OTP expired. Request a new one"
@@ -244,7 +215,6 @@ public class OtpService {
         }
 
         if (!passwordEncoder.matches(code, otp.getCodeHash())) {
-
             otp.setAttempts(otp.getAttempts() + 1);
             passwordResetOtpRepository.save(otp);
 

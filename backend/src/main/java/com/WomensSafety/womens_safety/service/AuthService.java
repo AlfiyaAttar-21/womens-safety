@@ -96,8 +96,8 @@ public class AuthService {
 
         userRepository.saveAndFlush(user);
 
-        // Send registration OTP directly to the registered email
-        otpService.sendOtp(user.getPhoneNumber(), user.getEmail());
+        // Send registration OTP through SMS
+        otpService.sendOtp(user.getPhoneNumber());
     }
 
     // Resend Registration OTP
@@ -116,7 +116,8 @@ public class AuthService {
             );
         }
 
-        otpService.sendOtp(phoneNumber, user.getEmail());
+        // Resend OTP through SMS
+        otpService.sendOtp(phoneNumber);
     }
 
     // Verify Registration OTP
@@ -186,6 +187,7 @@ public class AuthService {
             return;
         }
 
+        // Send password reset OTP through SMS
         otpService.sendPasswordResetOtp(phoneNumber);
     }
 
