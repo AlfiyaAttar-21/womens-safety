@@ -13,13 +13,14 @@ export default {
         muted: "#f0ead6",
         accent: "#b5a97c",
         border: "#d9cfb0",
-        sidebar: "#f5f0e0",
+        sidebar: "#2c2a1e",
+
         ink: {
-          DEFAULT: "#2A1B3D",
-          soft: "#5B4A70",
-          faint: "#8A7B9E"
+          DEFAULT: "#2c2a1e",
+          soft: "#6b7a3a",
+          faint: "#8d9d4f"
         },
-        cream: "#FFF8F5",
+        cream: "#faf8f2",
         blush: "#F7DCE5",
         lilac: "#E9E0F6",
         sos: {
@@ -40,7 +41,7 @@ export default {
         sans: ["Inter", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        soft: "0 1px 2px rgba(42,27,61,.06), 0 12px 32px -12px rgba(42,27,61,.18)",
+        soft: "0 1px 2px rgba(44,42,30,.06), 0 12px 32px -12px rgba(44,42,30,.18)",
         sos: "0 10px 30px -6px rgba(229,56,79,.55)",
       },
       keyframes: {

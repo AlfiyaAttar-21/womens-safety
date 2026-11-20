@@ -1,6 +1,7 @@
-
 import { useState, useRef } from 'react'
 import api from '../services/api'
+import AppShell from '../components/AppShell'
+
 import {
   ShieldCheck,
   MapPin,
@@ -11,14 +12,16 @@ import {
   CheckCircle2,
   CircleDot,
   Flag,
-  ArrowLeft,
-  CarFront,
   Heart,
   AlertCircle,
   Radio,
-  LocateFixed
+  Copy,
+  XCircle,
+  LocateFixed,
+  Play,
+  Square,
+  CheckCircle
 } from 'lucide-react'
-import '../App.css'
 
 function SafeJourney() {
   const [startingPoint, setStartingPoint] = useState('')
@@ -34,6 +37,7 @@ function SafeJourney() {
   const [trackingToken, setTrackingToken] = useState('')
   const [trackingUrl, setTrackingUrl] = useState('')
   const [lastLocation, setLastLocation] = useState(null)
+
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -147,7 +151,6 @@ function SafeJourney() {
     if (watchIdRef.current !== null && navigator.geolocation) {
       navigator.geolocation.clearWatch(watchIdRef.current)
       watchIdRef.current = null
-      console.log('GPS WATCH STOPPED')
     }
   }
 
@@ -163,14 +166,9 @@ function SafeJourney() {
     try {
       setLoading(true)
 
-      // Stop any previous GPS watch before starting a new one.
       stopGpsWatch()
 
-      console.log('SENDING TRACKING START REQUEST')
-
       const response = await api.post('/tracking/start')
-
-      console.log('NEW TRACKING STARTED:', response.data)
 
       const token = response.data.trackingToken
       const url = response.data.trackingUrl
@@ -183,16 +181,12 @@ function SafeJourney() {
       setTrackingUrl(url || '')
       setTrackingActive(true)
 
-      console.log('TRACKING ACTIVE SET TO TRUE')
-
       setMessage('Live tracking started. Getting your GPS location...')
 
       const watchId = navigator.geolocation.watchPosition(
         async (position) => {
           const latitude = position.coords.latitude
           const longitude = position.coords.longitude
-
-          console.log('GPS LOCATION RECEIVED:', latitude, longitude)
 
           setLastLocation({ latitude, longitude })
 
@@ -202,9 +196,6 @@ function SafeJourney() {
               latitude,
               longitude
             })
-
-            console.log('LOCATION SENT SUCCESSFULLY')
-
           } catch (err) {
             console.error('LOCATION UPDATE ERROR:', err)
 
@@ -216,7 +207,6 @@ function SafeJourney() {
         },
         (gpsError) => {
           console.error('GPS ERROR:', gpsError)
-
           setError('GPS error: ' + gpsError.message)
         },
         {
@@ -227,8 +217,6 @@ function SafeJourney() {
       )
 
       watchIdRef.current = watchId
-
-      console.log('GPS WATCH ID:', watchId)
 
     } catch (err) {
       console.error('TRACKING ERROR:', err)
@@ -252,8 +240,6 @@ function SafeJourney() {
       setLoading(true)
       setError('')
 
-      console.log('STOP TRACKING BUTTON CLICKED')
-
       stopGpsWatch()
 
       await api.post('/tracking/stop')
@@ -267,7 +253,6 @@ function SafeJourney() {
 
     } catch (err) {
       console.error('STOP TRACKING ERROR:', err)
-
       setError(err.response?.data?.message || 'Unable to stop tracking.')
     } finally {
       setLoading(false)
@@ -291,8 +276,6 @@ function SafeJourney() {
       )
 
       if (trackingActive) {
-        console.log('STOPPING TRACKING BECAUSE JOURNEY COMPLETED')
-
         stopGpsWatch()
         await api.post('/tracking/stop')
       }
@@ -336,8 +319,6 @@ function SafeJourney() {
       )
 
       if (trackingActive) {
-        console.log('STOPPING TRACKING BECAUSE JOURNEY CANCELLED')
-
         stopGpsWatch()
         await api.post('/tracking/stop')
       }
@@ -367,7 +348,6 @@ function SafeJourney() {
   async function handleCopyTrackingLink() {
     try {
       await navigator.clipboard.writeText(trackingUrl)
-
       setMessage('Tracking link copied successfully!')
       setError('')
     } catch (err) {
@@ -397,418 +377,491 @@ function SafeJourney() {
     })
   }
 
-  function logout() {
-    stopGpsWatch()
-    sessionStorage.clear()
-    window.location.href = '/login'
-  }
+  const inputClass =
+    'w-full rounded-xl border border-[#D9CFB0] bg-white px-4 py-3 pl-11 text-[#2C2A1E] outline-none transition focus:border-[#8D9D4F] focus:ring-2 focus:ring-[#8D9D4F]/20'
+
+  const primaryButton =
+    'flex items-center justify-center gap-2 rounded-xl bg-[#8D9D4F] px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-[#6B7A3A] disabled:cursor-not-allowed disabled:opacity-60'
 
   return (
-    <div className="sj-page">
+    <AppShell active="journey" wide>
 
-      <nav className="sj-navbar">
-        <a href="/dashboard" className="sj-brand">
-          <div className="sj-brand-icon">
-            <ShieldCheck size={25} />
-          </div>
-          <span>SafeHer</span>
-        </a>
-
-        <div className="sj-nav-right">
-          <a href="/dashboard" className="sj-dashboard-link">
-            <ArrowLeft size={17} />
-            Dashboard
-          </a>
-
-          <button className="sj-logout-btn" onClick={logout}>
-            Logout
-          </button>
-        </div>
-      </nav>
-
-      <section className="sj-hero">
-        <div className="sj-hero-content">
-          <div className="sj-small-label">
-            <Heart size={15} />
-            TRAVEL WITH CONFIDENCE
+      {/* PAGE HEADING */}
+      <div className="mb-7">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#E7EED5] text-[#6B7A3A]">
+            <Route size={25} />
           </div>
 
-          <h1>Safe Journey</h1>
-
-          <p>
-            Plan your trip, keep your journey details ready
-            and make every journey a safer one.
-          </p>
-
-          <div className="sj-hero-note">
-            <ShieldCheck size={18} />
-            <span>Your safety matters at every step.</span>
+          <div>
+            <h1 className="text-3xl font-bold text-[#2C2A1E]">
+              Safe Journey
+            </h1>
+            <p className="text-sm text-[#77745F]">
+              Plan your trip and stay connected.
+            </p>
           </div>
         </div>
+      </div>
 
-        <div className="sj-hero-art">
-          <div className="sj-hero-circle">
-            <Navigation size={65} strokeWidth={1.4} />
-            <span className="sj-art-heart">
-              <Heart size={23} />
-            </span>
+      {/* HERO */}
+      <section className="relative mb-8 overflow-hidden rounded-3xl bg-[#E7E3D2]">
+        <div className="flex flex-col items-center justify-between gap-8 px-6 py-10 md:flex-row md:px-10 md:py-14">
+
+          <div className="max-w-2xl">
+
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-bold tracking-wider text-[#6B7A3A]">
+              <Heart size={15} />
+              TRAVEL WITH CONFIDENCE
+            </div>
+
+            <h2 className="text-4xl font-bold leading-tight text-[#2C2A1E] md:text-5xl">
+              Your Journey.
+              <br />
+              <span className="text-[#8D9D4F]">Your Safety.</span>
+            </h2>
+
+            <p className="mt-5 max-w-xl text-base leading-7 text-[#68654F]">
+              Plan your trip, keep your journey details ready and make every
+              journey a safer one with SafeHer.
+            </p>
+
+            <div className="mt-6 flex items-center gap-3 text-sm font-medium text-[#6B7A3A]">
+              <ShieldCheck size={20} />
+              Your safety matters at every step.
+            </div>
+
           </div>
+
+          <div className="flex h-40 w-40 shrink-0 items-center justify-center rounded-full bg-[#8D9D4F] text-white shadow-xl md:h-52 md:w-52">
+            <Navigation size={85} strokeWidth={1.3} />
+          </div>
+
         </div>
       </section>
 
-      <main className="sj-main">
+      {/* ERROR MESSAGE */}
+      {error && (
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+          <AlertCircle size={20} className="mt-0.5 shrink-0" />
+          <p className="text-sm">{String(error)}</p>
+        </div>
+      )}
 
-        {error && (
-          <div className="sj-info-note" style={{ color: '#c93c37', marginBottom: 15 }}>
-            <AlertCircle size={19} />
-            <p>{String(error)}</p>
-          </div>
-        )}
+      {/* SUCCESS MESSAGE */}
+      {message && (
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-[#C9D6A8] bg-[#F0EAD6] p-4 text-[#55723B]">
+          <CheckCircle2 size={20} className="mt-0.5 shrink-0" />
+          <p className="text-sm font-medium">{message}</p>
+        </div>
+      )}
 
-        {message && (
-          <div className="sj-info-note" style={{ color: '#55723b', marginBottom: 15 }}>
-            <CheckCircle2 size={19} />
-            <p>{message}</p>
-          </div>
-        )}
+      {/* JOURNEY FORM */}
+      {!journeyStarted ? (
 
-        {!journeyStarted ? (
-          <section className="sj-form-card">
+        <section className="rounded-3xl border border-[#D9CFB0] bg-white p-6 shadow-sm md:p-9">
 
-            <div className="sj-section-heading">
-              <div className="sj-heading-icon">
-                <Route size={23} />
-              </div>
-
-              <div>
-                <h2>Plan Your Journey</h2>
-                <p>Fill in your travel details before you start.</p>
-              </div>
+          <div className="mb-8 flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F0EAD6] text-[#6B7A3A]">
+              <Route size={27} />
             </div>
 
-            <div className="sj-info-note">
-              <AlertCircle size={19} />
-              <p>
-                Enter your correct starting point, destination and
-                expected arrival details.
+            <div>
+              <h2 className="text-2xl font-bold text-[#2C2A1E]">
+                Plan Your Journey
+              </h2>
+              <p className="mt-1 text-sm text-[#85816B]">
+                Fill in your travel details before you start.
               </p>
             </div>
+          </div>
 
-            <form onSubmit={handleStartJourney} className="sj-form">
+          <div className="mb-7 flex gap-3 rounded-xl bg-[#F0EAD6] p-4 text-sm text-[#6B7A3A]">
+            <AlertCircle size={20} className="shrink-0" />
+            <p>
+              Enter your correct starting point, destination and expected
+              arrival details.
+            </p>
+          </div>
 
-              <div className="sj-form-group">
-                <label htmlFor="startingPoint">Starting Point</label>
-                <div className="sj-input-icon">
-                  <CircleDot size={18} />
+          <form onSubmit={handleStartJourney} className="space-y-6">
+
+            <div className="grid gap-6 md:grid-cols-2">
+
+              <div>
+                <label htmlFor="startingPoint" className="mb-2 block text-sm font-semibold text-[#494735]">
+                  Starting Point
+                </label>
+
+                <div className="relative">
+                  <CircleDot size={19} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8D9D4F]" />
+
                   <input
                     id="startingPoint"
                     type="text"
                     placeholder="Enter your starting location"
                     value={startingPoint}
                     onChange={(e) => setStartingPoint(e.target.value)}
+                    className={inputClass}
                     required
                   />
                 </div>
               </div>
 
-              <div className="sj-form-group">
-                <label htmlFor="destination">Destination</label>
-                <div className="sj-input-icon">
-                  <MapPin size={18} />
+              <div>
+                <label htmlFor="destination" className="mb-2 block text-sm font-semibold text-[#494735]">
+                  Destination
+                </label>
+
+                <div className="relative">
+                  <MapPin size={19} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8D9D4F]" />
+
                   <input
                     id="destination"
                     type="text"
                     placeholder="Enter your destination"
                     value={destination}
                     onChange={(e) => setDestination(e.target.value)}
+                    className={inputClass}
                     required
                   />
                 </div>
               </div>
 
-              <div className="sj-form-group">
-                <label htmlFor="arrivalDate">Expected Arrival Date</label>
-                <div className="sj-input-icon">
-                  <CalendarDays size={18} />
+              <div>
+                <label htmlFor="arrivalDate" className="mb-2 block text-sm font-semibold text-[#494735]">
+                  Expected Arrival Date
+                </label>
+
+                <div className="relative">
+                  <CalendarDays size={19} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8D9D4F]" />
+
                   <input
                     id="arrivalDate"
                     type="date"
                     value={arrivalDate}
                     min={minDate}
                     onChange={(e) => setArrivalDate(e.target.value)}
+                    className={inputClass}
                     required
                   />
                 </div>
               </div>
 
-              <div className="sj-form-group">
-                <label htmlFor="arrivalTime">Expected Arrival Time</label>
-                <div className="sj-input-icon">
-                  <Clock size={18} />
+              <div>
+                <label htmlFor="arrivalTime" className="mb-2 block text-sm font-semibold text-[#494735]">
+                  Expected Arrival Time
+                </label>
+
+                <div className="relative">
+                  <Clock size={19} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8D9D4F]" />
+
                   <input
                     id="arrivalTime"
                     type="time"
                     value={arrivalTime}
                     onChange={(e) => setArrivalTime(e.target.value)}
+                    className={inputClass}
                     required
                   />
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="sj-start-btn"
-                disabled={loading}
-              >
-                <Navigation size={18} />
-                {loading ? 'Starting...' : 'Start My Journey'}
-              </button>
-
-            </form>
-
-            <div className="sj-form-footer">
-              <ShieldCheck size={17} />
-              <span>Travel smart. Stay safe. Stay connected.</span>
             </div>
-          </section>
-        ) : (
-          <section className="sj-status-card">
 
-            <div className="sj-status-top">
-              <div className="sj-success-icon">
-                <CheckCircle2 size={35} />
+            <button
+              type="submit"
+              className={primaryButton + ' w-full md:w-auto'}
+              disabled={loading}
+            >
+              <Navigation size={19} />
+              {loading ? 'Starting...' : 'Start My Journey'}
+            </button>
+
+          </form>
+
+          <div className="mt-8 flex items-center gap-2 border-t border-[#E8E1CD] pt-5 text-sm text-[#77745F]">
+            <ShieldCheck size={18} className="text-[#8D9D4F]" />
+            Travel smart. Stay safe. Stay connected.
+          </div>
+
+        </section>
+
+      ) : (
+
+        /* ACTIVE JOURNEY */
+        <section className="rounded-3xl border border-[#D9CFB0] bg-white p-6 shadow-sm md:p-9">
+
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E7EED5] text-[#6B7A3A]">
+                <CheckCircle2 size={32} />
               </div>
 
               <div>
-                <h2>Your Journey Has Started!</h2>
-                <p>Journey ID: {journeyDetails.id}</p>
-              </div>
-
-              <span className="sj-active-badge">
-                <span></span>
-                Active
-              </span>
-            </div>
-
-            <div className="sj-route-card">
-              <div className="sj-route-line">
-                <div className="sj-route-point start">
-                  <CircleDot size={22} />
-                </div>
-
-                <div className="sj-route-dash"></div>
-
-                <div className="sj-route-point end">
-                  <Flag size={21} />
-                </div>
-              </div>
-
-              <div className="sj-route-locations">
-                <div>
-                  <span>STARTING POINT</span>
-                  <h3>{journeyDetails.startingPoint}</h3>
-                </div>
-
-                <div className="sj-destination-location">
-                  <span>DESTINATION</span>
-                  <h3>{journeyDetails.destination}</h3>
-                </div>
-              </div>
-            </div>
-
-            <div className="sj-arrival-details">
-              <div className="sj-arrival-item">
-                <div className="sj-arrival-icon">
-                  <CalendarDays size={21} />
-                </div>
-                <div>
-                  <span>Expected Arrival Date</span>
-                  <h3>{formatDate(journeyDetails.arrivalDate)}</h3>
-                </div>
-              </div>
-
-              <div className="sj-arrival-item">
-                <div className="sj-arrival-icon">
-                  <Clock size={21} />
-                </div>
-                <div>
-                  <span>Expected Arrival Time</span>
-                  <h3>{formatTime(journeyDetails.arrivalTime)}</h3>
-                </div>
-              </div>
-            </div>
-
-            <div className="sj-reminder">
-              <Heart size={20} />
-              <div>
-                <h3>Travel Safely!</h3>
-                <p>
-                  Stay alert, keep your phone charged and
-                  inform someone you trust about your journey.
+                <h2 className="text-2xl font-bold text-[#2C2A1E]">
+                  Your Journey Has Started!
+                </h2>
+                <p className="mt-1 text-sm text-[#85816B]">
+                  Journey ID: {journeyDetails.id}
                 </p>
               </div>
             </div>
 
-            <div style={{
-              background: '#f0ead6',
-              padding: '18px',
-              borderRadius: '12px',
-              marginTop: '18px'
-            }}>
-              <h3 style={{ marginTop: 0 }}>
-                <Radio size={18} style={{ verticalAlign: 'middle' }} />
-                {' '}Live GPS Tracking
+            <span className="flex items-center gap-2 rounded-full bg-[#E7EED5] px-4 py-2 text-sm font-bold text-[#55723B]">
+              <span className="h-2 w-2 rounded-full bg-[#8D9D4F]"></span>
+              Active
+            </span>
+
+          </div>
+
+          {/* ROUTE DETAILS */}
+          <div className="mb-7 rounded-2xl bg-[#F7F5EC] p-6">
+
+            <div className="mb-5 flex items-center gap-3 text-[#8D9D4F]">
+              <Route size={22} />
+              <h3 className="font-bold text-[#2C2A1E]">
+                Your Travel Route
               </h3>
+            </div>
 
-              {trackingActive ? (
-                <>
-                  <p style={{ color: '#55723b' }}>
-                    Live tracking is active.
+            <div className="grid gap-6 md:grid-cols-2">
+
+              <div className="flex gap-3">
+                <CircleDot size={23} className="mt-1 shrink-0 text-[#8D9D4F]" />
+
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wide text-[#85816B]">
+                    Starting Point
+                  </span>
+                  <p className="mt-1 font-semibold text-[#2C2A1E]">
+                    {journeyDetails.startingPoint}
                   </p>
+                </div>
+              </div>
 
-                  {trackingUrl && (
-                    <div style={{
-                      background: '#ffffff',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      marginTop: '12px'
-                    }}>
-                      <p><strong>Your Tracking Link:</strong></p>
+              <div className="flex gap-3">
+                <Flag size={23} className="mt-1 shrink-0 text-[#8D9D4F]" />
 
-                      <input
-                        type="text"
-                        value={trackingUrl}
-                        readOnly
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          boxSizing: 'border-box',
-                          marginBottom: '10px'
-                        }}
-                      />
-
-                      <button
-                        type="button"
-                        className="sj-start-btn"
-                        onClick={handleCopyTrackingLink}
-                      >
-                        Copy Tracking Link
-                      </button>
-                    </div>
-                  )}
-
-                  {lastLocation && (
-                    <p>
-                      Latitude: {lastLocation.latitude.toFixed(6)}
-                      <br />
-                      Longitude: {lastLocation.longitude.toFixed(6)}
-                    </p>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={handleStopTracking}
-                    disabled={loading}
-                    className="sj-end-btn"
-                  >
-                    Stop Live Tracking
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p>
-                    Start sharing your current GPS location with the tracking service.
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wide text-[#85816B]">
+                    Destination
+                  </span>
+                  <p className="mt-1 font-semibold text-[#2C2A1E]">
+                    {journeyDetails.destination}
                   </p>
+                </div>
+              </div>
 
-                  <button
-                    type="button"
-                    onClick={handleStartTracking}
-                    disabled={loading}
-                    className="sj-start-btn"
-                  >
-                    <LocateFixed size={18} />
-                    {loading ? 'Please wait...' : 'Start Live Tracking'}
-                  </button>
-                </>
-              )}
+              <div className="flex gap-3">
+                <CalendarDays size={23} className="mt-1 shrink-0 text-[#8D9D4F]" />
+
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wide text-[#85816B]">
+                    Expected Arrival Date
+                  </span>
+                  <p className="mt-1 font-semibold text-[#2C2A1E]">
+                    {formatDate(journeyDetails.arrivalDate)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Clock size={23} className="mt-1 shrink-0 text-[#8D9D4F]" />
+
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wide text-[#85816B]">
+                    Expected Arrival Time
+                  </span>
+                  <p className="mt-1 font-semibold text-[#2C2A1E]">
+                    {formatTime(journeyDetails.arrivalTime)}
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* CHECK IN */}
+          <div className="mb-7 rounded-2xl border border-[#D9CFB0] p-6">
+
+            <div className="mb-4 flex items-center gap-3">
+              <div className="rounded-xl bg-[#F0EAD6] p-3 text-[#6B7A3A]">
+                <CheckCircle size={23} />
+              </div>
+
+              <div>
+                <h3 className="font-bold text-[#2C2A1E]">
+                  Journey Check-in
+                </h3>
+                <p className="text-sm text-[#85816B]">
+                  Confirm that you are safe during your journey.
+                </p>
+              </div>
             </div>
 
             <button
               type="button"
               onClick={handleCheckIn}
               disabled={loading}
-              className="sj-start-btn"
-              style={{ marginTop: '15px' }}
+              className={primaryButton}
             >
-              <CheckCircle2 size={18} />
-              Check In
+              <CheckCircle2 size={19} />
+              Check In Now
             </button>
+
+          </div>
+
+          {/* LIVE TRACKING */}
+          <div className="mb-7 rounded-2xl border border-[#D9CFB0] p-6">
+
+            <div className="mb-5 flex items-center gap-3">
+              <div className="rounded-xl bg-[#F0EAD6] p-3 text-[#6B7A3A]">
+                <Radio size={23} />
+              </div>
+
+              <div>
+                <h3 className="font-bold text-[#2C2A1E]">
+                  Live Location Tracking
+                </h3>
+                <p className="text-sm text-[#85816B]">
+                  Share your live location during your journey.
+                </p>
+              </div>
+            </div>
+
+            {!trackingActive ? (
+
+              <button
+                type="button"
+                onClick={handleStartTracking}
+                disabled={loading}
+                className={primaryButton}
+              >
+                <Play size={18} />
+                {loading ? 'Starting Tracking...' : 'Start Live Tracking'}
+              </button>
+
+            ) : (
+
+              <div className="space-y-4">
+
+                <div className="flex items-center gap-2 rounded-xl bg-green-50 p-4 text-green-700">
+                  <span className="h-3 w-3 animate-pulse rounded-full bg-green-600"></span>
+                  <span className="font-semibold text-sm">
+                    Live tracking is active
+                  </span>
+                </div>
+
+                {lastLocation && (
+                  <div className="rounded-xl bg-[#F7F5EC] p-4">
+                    <div className="mb-2 flex items-center gap-2 text-sm font-bold text-[#6B7A3A]">
+                      <LocateFixed size={18} />
+                      Latest GPS Location
+                    </div>
+
+                    <p className="text-sm text-[#2C2A1E]">
+                      Latitude: {lastLocation.latitude}
+                    </p>
+
+                    <p className="text-sm text-[#2C2A1E]">
+                      Longitude: {lastLocation.longitude}
+                    </p>
+                  </div>
+                )}
+
+                {trackingUrl && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-[#494735]">
+                      Tracking Link
+                    </label>
+
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="text"
+                        value={trackingUrl}
+                        readOnly
+                        className="min-w-0 flex-1 rounded-xl border border-[#D9CFB0] bg-[#F7F5EC] px-4 py-3 text-sm text-[#2C2A1E]"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={handleCopyTrackingLink}
+                        className="flex items-center justify-center gap-2 rounded-xl bg-[#F0EAD6] px-4 py-3 font-semibold text-[#6B7A3A] hover:bg-[#E7DBBF]"
+                      >
+                        <Copy size={17} />
+                        Copy Link
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleStopTracking}
+                  disabled={loading}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
+                >
+                  <Square size={17} />
+                  Stop Live Tracking
+                </button>
+
+              </div>
+            )}
+
+          </div>
+
+          {/* JOURNEY ACTIONS */}
+          <div className="grid gap-4 border-t border-[#E8E1CD] pt-6 sm:grid-cols-2">
 
             <button
               type="button"
-              className="sj-end-btn"
               onClick={handleEndJourney}
               disabled={loading}
-              style={{ marginTop: '15px' }}
+              className="flex items-center justify-center gap-2 rounded-xl bg-[#6B7A3A] px-5 py-3 font-semibold text-white transition hover:bg-[#52612D] disabled:opacity-60"
             >
-              <CheckCircle2 size={18} />
+              <CheckCircle2 size={19} />
               Complete Journey
             </button>
 
             <button
               type="button"
-              className="sj-end-btn"
               onClick={handleCancelJourney}
               disabled={loading}
-              style={{ marginTop: '10px', background: '#c93c37' }}
+              className="flex items-center justify-center gap-2 rounded-xl bg-red-50 px-5 py-3 font-semibold text-red-600 transition hover:bg-red-100 disabled:opacity-60"
             >
+              <XCircle size={19} />
               Cancel Journey
             </button>
 
-          </section>
-        )}
-
-        <section className="sj-tips-section">
-          <div className="sj-tips-heading">
-            <ShieldCheck size={22} />
-            <div>
-              <h2>Travel Safety Tips</h2>
-              <p>A few simple steps for a safer journey.</p>
-            </div>
           </div>
 
-          <div className="sj-tips-grid">
-            <div className="sj-tip-card">
-              <div className="sj-tip-icon"><CarFront size={23} /></div>
-              <h3>Keep Your Phone Charged</h3>
-              <p>Make sure your phone has enough battery before travelling.</p>
-            </div>
-
-            <div className="sj-tip-card">
-              <div className="sj-tip-icon"><Heart size={23} /></div>
-              <h3>Inform Someone</h3>
-              <p>Share your travel plans with someone you trust.</p>
-            </div>
-
-            <div className="sj-tip-card">
-              <div className="sj-tip-icon"><MapPin size={23} /></div>
-              <h3>Know Your Route</h3>
-              <p>Be aware of your route and nearby safe places.</p>
-            </div>
-          </div>
         </section>
-      </main>
 
-      <footer className="sj-footer">
-        <div className="sj-footer-brand">
-          <ShieldCheck size={21} />
-          <span>SafeHer</span>
+      )}
+
+      {/* SAFETY REMINDER */}
+      <section className="mt-8 flex items-start gap-4 rounded-2xl border border-[#D9CFB0] bg-[#E7DBBF] p-5 md:p-6">
+
+        <div className="shrink-0 rounded-xl bg-[#F5F0E0] p-3 text-[#6B7A3A]">
+          <ShieldCheck size={25} />
         </div>
-        <p>Stay Safe. Stay Strong. Stay Confident.</p>
-        <span>© 2026 SafeHer. All rights reserved.</span>
-      </footer>
 
-    </div>
+        <div>
+          <h3 className="mb-1 font-bold text-[#2C2A1E]">
+            Your Safety Matters
+          </h3>
+
+          <p className="text-sm leading-relaxed text-[#6B6550]">
+            Always share your journey details with someone you trust.
+            Keep your phone charged and stay aware of your surroundings.
+          </p>
+        </div>
+
+      </section>
+
+    </AppShell>
   )
 }
 

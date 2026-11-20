@@ -1,5 +1,5 @@
-
 import { useState, useRef, useEffect } from 'react'
+
 import {
   Bot,
   Send,
@@ -8,10 +8,8 @@ import {
   Phone,
   AlertTriangle,
   MessageCircle,
-  ShieldCheck,
   Sparkles,
-  ArrowLeft,
-  Clock
+  LockKeyhole
 } from 'lucide-react'
 
 import api from '../services/api'
@@ -142,129 +140,185 @@ function AIChatbot() {
   return (
     <AppShell active="ai">
 
-      <div className="ai-page">
+      <div className="min-h-screen bg-[#FAF8F2] px-4 py-6 text-[#2C2A1E] md:px-8 md:py-9">
 
-        <div className="ai-top-heading">
-          <div>
-            <div className="ai-small-label">
-              <Sparkles size={15} />
-              YOUR PERSONAL SAFETY COMPANION
-            </div>
+        <div className="mx-auto max-w-6xl">
 
-            <PageTitle
-              title="SafeHer AI Assistant"
-              subtitle="Ask for safety tips, travel precautions or emergency guidance."
-            />
-          </div>
+          {/* PAGE HEADER */}
+          <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
 
-          <div className="ai-online-badge">
-            <span></span>
-            AI Assistant
-          </div>
-        </div>
+            <div>
 
-        <section className="ai-chat-card" aria-label="AI Chat">
-
-          <div className="ai-chat-topbar">
-
-            <div className="ai-chat-profile">
-
-              <div className="ai-bot-avatar">
-                <Bot size={25} />
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#D9CFB0] bg-[#F0EAD6] px-4 py-2 text-xs font-bold tracking-wider text-[#6B7A3A]">
+                <Sparkles size={15} />
+                YOUR PERSONAL SAFETY COMPANION
               </div>
 
-              <div>
-                <h2>SafeHer Assistant</h2>
-
-                <p>
-                  <span className="ai-live-dot"></span>
-                  Ready to help you
-                </p>
-              </div>
+              <PageTitle
+                title="SafeHer AI Assistant"
+                subtitle="Ask for safety tips, travel precautions or emergency guidance."
+              />
 
             </div>
 
-            <button
-              type="button"
-              onClick={clearChat}
-              disabled={isTyping}
-              className="ai-clear-button"
-              title="Clear conversation"
-            >
-              <Trash2 size={17} />
-              <span>Clear chat</span>
-            </button>
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#C8D0A9] bg-[#E8ECD9] px-4 py-2.5 text-sm font-semibold text-[#6B7A3A]">
+              <span className="h-2 w-2 rounded-full bg-[#8D9D4F]" />
+              AI Assistant
+            </div>
 
           </div>
 
-          <div className="ai-chat-body" aria-live="polite">
+          {/* CHAT CARD */}
+          <section className="overflow-hidden rounded-3xl border border-[#D9CFB0] bg-white shadow-sm">
 
-            {messages.map((item, index) => (
+            {/* CHAT HEADER */}
+            <div className="flex items-center justify-between border-b border-[#E9E2D0] bg-[#F7F4E9] px-5 py-5 md:px-7">
 
-              <div
-                key={index}
-                className={`ai-message-row ${
-                  item.sender === 'user'
-                    ? 'ai-user-row'
-                    : 'ai-bot-row'
-                }`}
+              <div className="flex items-center gap-4">
+
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#8D9D4F] text-white shadow-sm">
+                  <Bot size={26} />
+                </div>
+
+                <div>
+                  <h2 className="font-bold text-[#2C2A1E]">
+                    SafeHer Assistant
+                  </h2>
+
+                  <p className="mt-1 flex items-center gap-2 text-xs text-[#85806E]">
+                    <span className="h-2 w-2 rounded-full bg-[#8D9D4F]" />
+                    Ready to help you
+                  </p>
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={clearChat}
+                disabled={isTyping}
+                title="Clear conversation"
+                className="flex items-center gap-2 rounded-xl border border-[#D9CFB0] bg-white px-3 py-2.5 text-sm font-semibold text-[#766D50] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
               >
+                <Trash2 size={17} />
+                <span className="hidden sm:inline">Clear chat</span>
+              </button>
 
-                {item.sender === 'bot' && (
-                  <div className="ai-message-avatar ai-bot-message-avatar">
-                    <Bot size={18} />
+            </div>
+
+            {/* CHAT BODY */}
+            <div
+              className="min-h-[350px] max-h-[540px] space-y-6 overflow-y-auto bg-[#FCFBF7] px-4 py-6 md:px-7"
+              aria-live="polite"
+            >
+
+              {messages.map((item, index) => (
+
+                <div
+                  key={index}
+                  className={`flex items-end gap-3 ${
+                    item.sender === 'user'
+                      ? 'justify-end'
+                      : 'justify-start'
+                  }`}
+                >
+
+                  {item.sender === 'bot' && (
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#E8ECD9] text-[#6B7A3A]">
+                      <Bot size={19} />
+                    </div>
+                  )}
+
+                  <div className={`flex max-w-[85%] flex-col ${
+                    item.sender === 'user'
+                      ? 'items-end'
+                      : 'items-start'
+                  }`}>
+
+                    <div
+                      className={`rounded-2xl px-4 py-3.5 text-sm leading-7 shadow-sm ${
+                        item.sender === 'user'
+                          ? 'rounded-br-sm bg-[#8D9D4F] text-white'
+                          : 'rounded-bl-sm border border-[#E5DEC9] bg-white text-[#494638]'
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap break-words">
+                        {item.text}
+                      </p>
+                    </div>
+
+                    <span className="mt-2 px-1 text-[11px] font-medium text-[#99927E]">
+                      {item.sender === 'user' ? 'You' : 'SafeHer AI'}
+                    </span>
+
                   </div>
-                )}
 
-                <div className="ai-message-wrapper">
-
-                  <div
-                    className={`ai-message-bubble ${
-                      item.sender === 'user'
-                        ? 'ai-user-bubble'
-                        : 'ai-bot-bubble'
-                    }`}
-                  >
-                    {item.text}
-                  </div>
-
-                  <span className="ai-message-time">
-                    {item.sender === 'user' ? 'You' : 'SafeHer AI'}
-                  </span>
+                  {item.sender === 'user' && (
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F0EAD6] text-[#6B7A3A]">
+                      <UserRound size={19} />
+                    </div>
+                  )}
 
                 </div>
 
-                {item.sender === 'user' && (
-                  <div className="ai-message-avatar ai-user-message-avatar">
-                    <UserRound size={18} />
+              ))}
+
+              {/* TYPING ANIMATION */}
+              {isTyping && (
+
+                <div className="flex items-end gap-3">
+
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E8ECD9] text-[#6B7A3A]">
+                    <Bot size={19} />
                   </div>
-                )}
 
-              </div>
+                  <div>
+                    <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm border border-[#E5DEC9] bg-white px-5 py-4">
 
-            ))}
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-[#8D9D4F]" />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-[#8D9D4F] [animation-delay:150ms]" />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-[#8D9D4F] [animation-delay:300ms]" />
 
-            {isTyping && (
+                    </div>
 
-              <div className="ai-message-row ai-bot-row">
+                    <span className="mt-2 block text-[11px] text-[#99927E]">
+                      SafeHer AI is typing...
+                    </span>
+                  </div>
 
-                <div className="ai-message-avatar ai-bot-message-avatar">
-                  <Bot size={18} />
                 </div>
 
-                <div className="ai-message-wrapper">
+              )}
 
-                  <div className="ai-typing-bubble">
+              <div ref={chatEndRef} />
 
-                    <span></span>
-                    <span></span>
-                    <span></span>
+            </div>
 
-                  </div>
+            {/* SUGGESTIONS */}
+            {messages.length === 1 && (
 
-                  <span className="ai-message-time">
-                    SafeHer AI is typing...
-                  </span>
+              <div className="border-t border-[#E9E2D0] bg-white px-5 py-5 md:px-7">
+
+                <div className="mb-4 flex items-center gap-2 text-sm font-bold text-[#6B7A3A]">
+                  <MessageCircle size={17} />
+                  Try asking
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+
+                  {suggestions.map((item, index) => (
+
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleSuggestion(item)}
+                      disabled={isTyping}
+                      className="rounded-xl border border-[#D9CFB0] bg-[#FAF8F2] px-4 py-3 text-left text-xs font-semibold text-[#6B7A3A] transition hover:border-[#8D9D4F] hover:bg-[#E8ECD9] disabled:opacity-50 sm:text-sm"
+                    >
+                      {item}
+                    </button>
+
+                  ))}
 
                 </div>
 
@@ -272,104 +326,98 @@ function AIChatbot() {
 
             )}
 
-            <div ref={chatEndRef} />
+            {/* MESSAGE INPUT */}
+            <form
+              onSubmit={handleSend}
+              className="flex items-center gap-3 border-t border-[#E9E2D0] bg-white p-4 md:p-6"
+            >
 
-          </div>
+              <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[#D9CFB0] bg-[#FAF8F2] px-4 py-3.5 transition focus-within:border-[#8D9D4F] focus-within:ring-2 focus-within:ring-[#8D9D4F]/20">
 
-          {messages.length === 1 && (
+                <MessageCircle
+                  size={19}
+                  className="shrink-0 text-[#8D9D4F]"
+                />
 
-            <div className="ai-suggestions-area">
-
-              <div className="ai-suggestion-heading">
-                <MessageCircle size={16} />
-                <span>Try asking</span>
-              </div>
-
-              <div className="ai-suggestion-buttons">
-
-                {suggestions.map((item, index) => (
-
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleSuggestion(item)}
-                    disabled={isTyping}
-                    className="ai-suggestion-button"
-                  >
-                    {item}
-                  </button>
-
-                ))}
+                <input
+                  type="text"
+                  aria-label="Your message"
+                  placeholder="Type your safety-related question..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  disabled={isTyping}
+                  maxLength={3000}
+                  className="w-full min-w-0 bg-transparent text-sm text-[#2C2A1E] outline-none placeholder:text-[#A49F8D] disabled:opacity-60"
+                />
 
               </div>
+
+              <button
+                type="submit"
+                disabled={!message.trim() || isTyping}
+                aria-label="Send message"
+                className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#8D9D4F] px-4 py-3.5 font-semibold text-white shadow-sm transition hover:bg-[#6B7A3A] disabled:cursor-not-allowed disabled:opacity-50 sm:px-6"
+              >
+                <Send size={19} />
+                <span className="hidden sm:inline">Send</span>
+              </button>
+
+            </form>
+
+            {/* PRIVACY NOTE */}
+            <div className="flex items-center justify-center gap-2 border-t border-[#E9E2D0] bg-[#F7F4E9] px-4 py-3 text-center text-xs text-[#85806E]">
+
+              <LockKeyhole size={14} className="shrink-0 text-[#8D9D4F]" />
+
+              Your safety matters. Avoid sharing passwords or OTPs.
 
             </div>
 
-          )}
+          </section>
 
-          <form
-            onSubmit={handleSend}
-            className="ai-message-form"
-          >
+          {/* EMERGENCY CARD */}
+          <section className="mt-7 flex flex-col gap-5 rounded-3xl border border-[#E7C9BD] bg-[#FBF0E9] p-6 sm:flex-row sm:items-center">
 
-            <input
-              type="text"
-              aria-label="Your message"
-              placeholder="Type your safety-related question..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              disabled={isTyping}
-              maxLength={3000}
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#E9D1C5] text-[#A84C3E]">
+              <Phone size={26} />
+            </div>
+
+            <div className="flex-1">
+
+              <h3 className="text-lg font-bold text-[#63372E]">
+                In immediate danger?
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-[#86685D]">
+                Move somewhere safer if possible and contact emergency services.
+              </p>
+
+            </div>
+
+            <a
+              href="tel:112"
+              className="flex items-center justify-center gap-2 rounded-xl bg-[#B85B4B] px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#984536]"
+            >
+              <Phone size={18} />
+              Call 112
+            </a>
+
+          </section>
+
+          {/* WARNING */}
+          <div className="mt-5 flex items-start gap-3 rounded-2xl border border-[#E7DDBD] bg-[#FBF7E9] p-5">
+
+            <AlertTriangle
+              size={21}
+              className="mt-0.5 shrink-0 text-[#A58B43]"
             />
 
-            <button
-              type="submit"
-              disabled={!message.trim() || isTyping}
-              aria-label="Send message"
-            >
-              <Send size={19} />
-              <span>Send</span>
-            </button>
-
-          </form>
-
-          <div className="ai-privacy-note">
-            <ShieldCheck size={15} />
-            Your safety matters. Avoid sharing passwords or OTPs.
-          </div>
-
-        </section>
-
-        <section className="ai-emergency-card">
-
-          <div className="ai-emergency-icon">
-            <Phone size={25} />
-          </div>
-
-          <div className="ai-emergency-content">
-
-            <h3>In immediate danger?</h3>
-
-            <p>
-              Move somewhere safer if possible and contact emergency services.
+            <p className="text-xs leading-6 text-[#766D50]">
+              AI answers can sometimes be incorrect. This assistant provides
+              general guidance and is not a replacement for emergency services.
             </p>
 
           </div>
-
-          <a href="tel:112" className="ai-call-button">
-            Call 112
-          </a>
-
-        </section>
-
-        <div className="ai-warning-card">
-
-          <AlertTriangle size={20} />
-
-          <p>
-            AI answers can sometimes be incorrect. This assistant provides
-            general guidance and is not a replacement for emergency services.
-          </p>
 
         </div>
 
