@@ -1,4 +1,3 @@
-
 package com.WomensSafety.womens_safety.service;
 
 import java.util.List;
@@ -30,6 +29,11 @@ public class TextBeeService {
     }
 
     public void sendSms(String phoneNumber, String message) {
+
+        // Add India's country code if the number has 10 digits
+        if (phoneNumber.length() == 10) {
+            phoneNumber = "+91" + phoneNumber;
+        }
 
         Map<String, Object> request = Map.of(
                 "recipients", List.of(phoneNumber),
