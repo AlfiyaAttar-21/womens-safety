@@ -1,151 +1,334 @@
+
 import { useState } from 'react'
 import {
-  ShieldCheck, UserRound, Mail, Phone, Pencil, Save, X,
-  LockKeyhole, CheckCircle2,
+  UserRound,
+  Mail,
+  Phone,
+  ShieldCheck,
+  Pencil,
+  Save,
+  X,
+  LogOut,
+  ArrowLeft,
+  CheckCircle2,
+  LockKeyhole
 } from 'lucide-react'
+
 import AppShell from '../components/AppShell'
-import Field from '../components/Field'
-import Button from '../components/Button'
-import Card from '../components/Card'
-import Alert from '../components/Alert'
-import { PageTitle } from '../components/FormBits'
+import '../App.css'
 
 function MyProfile() {
-  const savedName = sessionStorage.getItem('safeherUserName') || ''
-  const savedMobile = sessionStorage.getItem('safeherPhoneNumber') || ''
-
-  const [name, setName] = useState(savedName)
-  const [email, setEmail] = useState('')
-  const [mobile, setMobile] = useState(savedMobile)
-  const [editMode, setEditMode] = useState(false)
-  const [success, setSuccess] = useState(false)
-
-  const [originalData, setOriginalData] = useState({
-    name: savedName,
-    email: '',
-    mobile: savedMobile
+  const [profile, setProfile] = useState({
+    name: sessionStorage.getItem('safeherUserName') || '',
+    email: sessionStorage.getItem('safeherEmail') || '',
+    mobile: sessionStorage.getItem('safeherPhoneNumber') || ''
   })
 
+  const [originalProfile, setOriginalProfile] = useState(profile)
+  const [isEditing, setIsEditing] = useState(false)
+  const [success, setSuccess] = useState('')
+
+  function handleChange(e) {
+    const { name, value } = e.target
+
+    setProfile((previous) => ({
+      ...previous,
+      [name]: value
+    }))
+
+    setSuccess('')
+  }
+
   function handleEdit() {
-    setOriginalData({ name, email, mobile })
-    setEditMode(true)
-    setSuccess(false)
+    setOriginalProfile(profile)
+    setIsEditing(true)
+    setSuccess('')
   }
 
   function handleCancel() {
-    setName(originalData.name)
-    setEmail(originalData.email)
-    setMobile(originalData.mobile)
-    setEditMode(false)
+    setProfile(originalProfile)
+    setIsEditing(false)
+    setSuccess('')
   }
 
-  function handleSubmit(e) {
+  function handleSave(e) {
     e.preventDefault()
 
-    if (!name.trim() || !email.trim() || !mobile.trim()) {
-      alert('Please fill all the fields')
+    if (
+      !profile.name.trim() ||
+      !profile.email.trim() ||
+      !profile.mobile.trim()
+    ) {
+      alert('Please fill all profile details.')
       return
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      alert('Please enter a valid email address')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email.trim())) {
+      alert('Please enter a valid email address.')
       return
     }
 
-    if (!/^[6-9][0-9]{9}$/.test(mobile)) {
-      alert('Please enter a valid 10-digit mobile number')
+    if (!/^[0-9]{10}$/.test(profile.mobile.trim())) {
+      alert('Please enter a valid 10 digit mobile number.')
       return
     }
 
-    setOriginalData({ name, email, mobile })
-    sessionStorage.setItem('safeherUserName', name)
-    sessionStorage.setItem('safeherPhoneNumber', mobile)
+    const updatedProfile = {
+      name: profile.name.trim(),
+      email: profile.email.trim().toLowerCase(),
+      mobile: profile.mobile.trim()
+    }
 
-    setEditMode(false)
-    setSuccess(true)
+    // Save all profile details
+    sessionStorage.setItem('safeherUserName', updatedProfile.name)
+    sessionStorage.setItem('safeherEmail', updatedProfile.email)
+    sessionStorage.setItem('safeherPhoneNumber', updatedProfile.mobile)
+
+    setProfile(updatedProfile)
+    setOriginalProfile(updatedProfile)
+
+    setIsEditing(false)
+    setSuccess('Your profile has been updated successfully!')
   }
 
   function handleLogout() {
-    sessionStorage.removeItem('safeherAccessToken')
-    sessionStorage.removeItem('safeherRefreshToken')
-    sessionStorage.removeItem('safeherUserId')
-    sessionStorage.removeItem('safeherUserName')
-    sessionStorage.removeItem('safeherPhoneNumber')
+    const confirmLogout = window.confirm(
+      'Are you sure you want to logout?'
+    )
 
-    window.location.href = '/login'
+    if (confirmLogout) {
+      sessionStorage.removeItem('safeherAccessToken')
+      sessionStorage.removeItem('safeherRefreshToken')
+      sessionStorage.removeItem('safeherUserId')
+      sessionStorage.removeItem('safeherUserName')
+      sessionStorage.removeItem('safeherEmail')
+      sessionStorage.removeItem('safeherPhoneNumber')
+
+      window.location.href = '/login'
+    }
   }
 
-  const initial = name.trim()
-    ? name.trim().charAt(0).toUpperCase()
+  const initial = profile.name.trim()
+    ? profile.name.trim().charAt(0).toUpperCase()
     : 'U'
 
-return (
-    <AppShell active="profile" onLogout={handleLogout}>
-      <PageTitle title="My profile" subtitle="Keep your account details up to date." />
+  return (
+    <AppShell active="profile">
 
-      <Alert type="success">{success ? 'Profile details updated for this session.' : ''}</Alert>
+      <div className="profile-page">
 
-      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-        <Card className="h-fit text-center">
-          <span className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-ink font-display text-4xl font-extrabold text-cream">
-            {initial}
-          </span>
-          <h2 className="mt-4 font-display text-xl font-bold">{name || 'SafeHer User'}</h2>
-          <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-ink-soft"><ShieldCheck size={15} /> SafeHer member</p>
+        <div className="profile-page-heading">
 
-          <ul className="mt-6 space-y-4 border-t border-ink/10 pt-5 text-left text-sm">
-            <li className="flex gap-3">
-              <LockKeyhole size={18} className="mt-0.5 shrink-0" />
-              <span><strong className="block">Protected account</strong><span className="text-ink-soft">You sign in with a password and one-time codes.</span></span>
-            </li>
-            <li className="flex gap-3">
-              <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-              <span><strong className="block">Keep details current</strong><span className="text-ink-soft">So your contacts can reach you.</span></span>
-            </li>
-          </ul>
-        </Card>
-
-        <Card>
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="font-display text-xl font-bold">Personal information</h2>
-              <p className="text-sm text-ink-soft">{editMode ? 'Make your changes and save.' : 'Select edit to change your details.'}</p>
+          <div>
+            <div className="profile-eyebrow">
+              <ShieldCheck size={15} />
+              YOUR ACCOUNT
             </div>
-            {!editMode && (
-              <Button type="button" variant="secondary" onClick={handleEdit}>
-                <Pencil size={16} /> Edit profile
-              </Button>
-            )}
+
+            <h1>My Profile</h1>
+
+            <p>Manage your personal information and account details.</p>
           </div>
 
-          <form onSubmit={handleSubmit} noValidate>
-            <Field label="Full name" icon={UserRound} placeholder="Your full name" value={name}
-              onChange={(e) => setName(e.target.value)} disabled={!editMode} maxLength={100} required />
-            <Field label="Email address" icon={Mail} type="email" placeholder="you@example.com" value={email}
-              onChange={(e) => setEmail(e.target.value)} disabled={!editMode} maxLength={100} required />
-            <Field label="Mobile number" icon={Phone} type="tel" inputMode="numeric" placeholder="10-digit number" value={mobile}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '')
-                if (value.length <= 10) {
-                  setMobile(value)
-                }
-              }}
-              disabled={!editMode} maxLength={10} required />
+          <button
+            type="button"
+            className="profile-back-button"
+            onClick={() => window.location.href = '/dashboard'}
+          >
+            <ArrowLeft size={17} />
+            Dashboard
+          </button>
 
-            {editMode && (
-              <div className="flex flex-wrap gap-3">
-                <Button type="submit"><Save size={17} /> Save changes</Button>
-                <Button type="button" variant="secondary" onClick={handleCancel}><X size={17} /> Cancel</Button>
+        </div>
+
+        <div className="profile-layout">
+
+          <section className="profile-card">
+
+            <div className="profile-card-top">
+
+              <div className="profile-avatar">
+                {initial}
               </div>
-            )}
-          </form>
-        </Card>
+
+              <h2>{profile.name || 'Your Name'}</h2>
+
+              <p>{profile.email || 'Your email address'}</p>
+
+              <div className="profile-verified">
+                <CheckCircle2 size={14} />
+                SafeHer Account
+              </div>
+
+            </div>
+
+            <div className="profile-card-content">
+
+              <div className="profile-section-heading">
+
+                <div>
+                  <h3>Personal Information</h3>
+                  <p>Keep your account details up to date.</p>
+                </div>
+
+                {!isEditing && (
+                  <button
+                    type="button"
+                    className="profile-edit-button"
+                    onClick={handleEdit}
+                  >
+                    <Pencil size={15} />
+                    Edit
+                  </button>
+                )}
+
+              </div>
+
+              {success && (
+                <div className="profile-success">
+                  <CheckCircle2 size={18} />
+                  {success}
+                </div>
+              )}
+
+              <form onSubmit={handleSave}>
+
+                <div className="profile-field">
+
+                  <label htmlFor="profile-name">
+                    <UserRound size={16} />
+                    Full Name
+                  </label>
+
+                  <input
+                    id="profile-name"
+                    type="text"
+                    name="name"
+                    placeholder="Enter your full name"
+                    value={profile.name}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    maxLength={100}
+                  />
+
+                </div>
+
+                <div className="profile-field">
+
+                  <label htmlFor="profile-email">
+                    <Mail size={16} />
+                    Email Address
+                  </label>
+
+                  <input
+                    id="profile-email"
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email address"
+                    value={profile.email}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    maxLength={150}
+                  />
+
+                </div>
+
+                <div className="profile-field">
+
+                  <label htmlFor="profile-mobile">
+                    <Phone size={16} />
+                    Mobile Number
+                  </label>
+
+                  <input
+                    id="profile-mobile"
+                    type="tel"
+                    name="mobile"
+                    placeholder="Enter 10 digit mobile number"
+                    value={profile.mobile}
+                    onChange={handleChange}
+                    disabled={!isEditing}
+                    maxLength={10}
+                  />
+
+                </div>
+
+                {isEditing && (
+
+                  <div className="profile-form-actions">
+
+                    <button
+                      type="button"
+                      className="profile-cancel-button"
+                      onClick={handleCancel}
+                    >
+                      <X size={17} />
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="profile-save-button"
+                    >
+                      <Save size={17} />
+                      Save Changes
+                    </button>
+
+                  </div>
+
+                )}
+
+              </form>
+
+            </div>
+
+          </section>
+
+          <aside className="profile-side-column">
+
+            <div className="profile-info-card">
+
+              <div className="profile-info-icon">
+                <ShieldCheck size={23} />
+              </div>
+
+              <h3>Your Safety Matters</h3>
+
+              <p>
+                Keep your contact information updated so your SafeHer
+                account details remain accurate.
+              </p>
+
+            </div>
+
+            <div className="profile-security-card">
+
+              <div className="profile-security-icon">
+                <LockKeyhole size={21} />
+              </div>
+
+              <div>
+                <h3>Account Security</h3>
+                <p>Your account is protected by your login session.</p>
+              </div>
+
+            </div>
+
+            <button
+              type="button"
+              className="profile-logout-button"
+              onClick={handleLogout}
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
+
+          </aside>
+
+        </div>
+
       </div>
 
-      <p className="mt-6 flex items-start gap-3 rounded-2xl bg-lilac/60 p-4 text-sm text-ink-soft">
-        <ShieldCheck size={20} className="mt-0.5 shrink-0 text-ink" />
-        Never share your password, one-time codes or PINs with anyone, including people who say they are from SafeHer.
-      </p>
     </AppShell>
   )
 }

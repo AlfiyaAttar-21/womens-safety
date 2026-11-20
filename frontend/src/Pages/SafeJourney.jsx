@@ -1,17 +1,24 @@
+
 import { useState, useRef } from 'react'
 import api from '../services/api'
 import {
-  ShieldCheck, MapPin, Navigation, CalendarDays, Clock, Route,
-  CheckCircle2, CircleDot, Flag, CarFront, Heart, AlertCircle,
-  Radio, LocateFixed, Copy,
+  ShieldCheck,
+  MapPin,
+  Navigation,
+  CalendarDays,
+  Clock,
+  Route,
+  CheckCircle2,
+  CircleDot,
+  Flag,
+  ArrowLeft,
+  CarFront,
+  Heart,
+  AlertCircle,
+  Radio,
+  LocateFixed
 } from 'lucide-react'
-import AppShell from '../components/AppShell'
-import Field from '../components/Field'
-import Alert from '../components/Alert'
-import Button from '../components/Button'
-import Badge from '../components/Badge'
-import Card from '../components/Card'
-import { PageTitle } from '../components/FormBits'
+import '../App.css'
 
 function SafeJourney() {
   const [startingPoint, setStartingPoint] = useState('')
@@ -396,155 +403,412 @@ function SafeJourney() {
     window.location.href = '/login'
   }
 
-const tips = [
-    [CarFront, 'Charge your phone', 'Make sure you have enough battery before you leave.'],
-    [Heart, 'Tell someone', 'Share your plan with a person you trust.'],
-    [MapPin, 'Know your route', 'Note safe places along the way, like shops or stations.'],
-  ]
-
   return (
-    <AppShell active="journey" onLogout={logout}>
-      <PageTitle title="Safe journey" subtitle="Tell us where you’re going and when you’ll arrive. If you don’t check in, your contacts are told." />
+    <div className="sj-page">
 
-      <Alert>{error ? String(error) : ''}</Alert>
-      <Alert type="success">{message}</Alert>
+      <nav className="sj-navbar">
+        <a href="/dashboard" className="sj-brand">
+          <div className="sj-brand-icon">
+            <ShieldCheck size={25} />
+          </div>
+          <span>SafeHer</span>
+        </a>
 
-      {!journeyStarted ? (
-        <Card className="max-w-2xl">
-          <h2 className="flex items-center gap-2 font-display text-xl font-bold"><Route size={20} /> Plan your journey</h2>
-          <p className="mb-6 mt-1 flex items-start gap-2 text-sm text-ink-soft">
-            <AlertCircle size={16} className="mt-0.5 shrink-0" />
-            Enter your real start, destination and expected arrival time.
+        <div className="sj-nav-right">
+          <a href="/dashboard" className="sj-dashboard-link">
+            <ArrowLeft size={17} />
+            Dashboard
+          </a>
+
+          <button className="sj-logout-btn" onClick={logout}>
+            Logout
+          </button>
+        </div>
+      </nav>
+
+      <section className="sj-hero">
+        <div className="sj-hero-content">
+          <div className="sj-small-label">
+            <Heart size={15} />
+            TRAVEL WITH CONFIDENCE
+          </div>
+
+          <h1>Safe Journey</h1>
+
+          <p>
+            Plan your trip, keep your journey details ready
+            and make every journey a safer one.
           </p>
 
-          <form onSubmit={handleStartJourney} noValidate>
-            <Field label="Starting point" icon={CircleDot} placeholder="Where are you now?"
-              value={startingPoint} onChange={(e) => setStartingPoint(e.target.value)} required />
-            <Field label="Destination" icon={MapPin} placeholder="Where are you going?"
-              value={destination} onChange={(e) => setDestination(e.target.value)} required />
-            <div className="grid gap-x-4 sm:grid-cols-2">
-              <Field label="Arrival date" icon={CalendarDays} type="date" min={minDate}
-                value={arrivalDate} onChange={(e) => setArrivalDate(e.target.value)} required />
-              <Field label="Arrival time" icon={Clock} type="time"
-                value={arrivalTime} onChange={(e) => setArrivalTime(e.target.value)} required />
-            </div>
-            <Button type="submit" className="mt-2 w-full" disabled={loading}>
-              <Navigation size={17} /> {loading ? 'Starting…' : 'Start my journey'}
-            </Button>
-          </form>
-        </Card>
-      ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="font-display text-xl font-bold">Journey in progress</h2>
-                <p className="text-sm text-ink-soft">Journey ID: {journeyDetails.id}</p>
-              </div>
-              <Badge tone="safe">Active</Badge>
-            </div>
-
-            <ol className="mt-6 space-y-1">
-              <li className="flex gap-4">
-                <span className="mt-1 text-safe"><CircleDot size={22} /></span>
-                <div className="pb-5">
-                  <p className="text-sm text-ink-soft">Starting point</p>
-                  <p className="font-display text-lg font-bold">{journeyDetails.startingPoint}</p>
-                </div>
-              </li>
-              <li className="flex gap-4">
-                <span className="mt-1 text-sos"><Flag size={21} /></span>
-                <div>
-                  <p className="text-sm text-ink-soft">Destination</p>
-                  <p className="font-display text-lg font-bold">{journeyDetails.destination}</p>
-                </div>
-              </li>
-            </ol>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-lilac/60 p-4">
-                <p className="flex items-center gap-2 text-sm text-ink-soft"><CalendarDays size={16} /> Arrival date</p>
-                <p className="mt-1 font-semibold">{formatDate(journeyDetails.arrivalDate)}</p>
-              </div>
-              <div className="rounded-2xl bg-lilac/60 p-4">
-                <p className="flex items-center gap-2 text-sm text-ink-soft"><Clock size={16} /> Arrival time</p>
-                <p className="mt-1 font-semibold">{formatTime(journeyDetails.arrivalTime)}</p>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-col gap-3">
-              <Button type="button" onClick={handleCheckIn} disabled={loading}>
-                <CheckCircle2 size={17} /> Check in
-              </Button>
-              <Button type="button" variant="secondary" onClick={handleEndJourney} disabled={loading}>
-                Complete journey
-              </Button>
-              <Button type="button" variant="danger" onClick={handleCancelJourney} disabled={loading}>
-                Cancel journey
-              </Button>
-            </div>
-          </Card>
-
-          <Card className="h-fit">
-            <h2 className="flex items-center gap-2 font-display text-xl font-bold"><Radio size={20} /> Live GPS tracking</h2>
-
-            {trackingActive ? (
-              <>
-                <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-[#136B5D]">
-                  <span className="h-2.5 w-2.5 rounded-full bg-safe" /> Tracking is on
-                </p>
-
-                {trackingUrl && (
-                  <div className="mt-4">
-                    <label htmlFor="trackUrl" className="mb-1.5 block text-sm font-semibold">Your tracking link</label>
-                    <div className="flex gap-2">
-                      <input id="trackUrl" readOnly value={trackingUrl}
-                        className="h-12 min-w-0 flex-1 rounded-2xl bg-cream px-4 text-sm ring-1 ring-ink/15" />
-                      <Button type="button" variant="secondary" onClick={handleCopyTrackingLink} aria-label="Copy tracking link">
-                        <Copy size={17} />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {lastLocation && (
-                  <p className="mt-4 rounded-2xl bg-lilac/60 p-4 text-sm text-ink-soft">
-                    Latitude {lastLocation.latitude.toFixed(6)}<br />
-                    Longitude {lastLocation.longitude.toFixed(6)}
-                  </p>
-                )}
-
-                <Button type="button" variant="danger" className="mt-5 w-full" onClick={handleStopTracking} disabled={loading}>
-                  Stop live tracking
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="mb-5 mt-2 text-sm text-ink-soft">
-                  Share your live location with a link your contacts can open in any browser.
-                </p>
-                <Button type="button" className="w-full" onClick={handleStartTracking} disabled={loading}>
-                  <LocateFixed size={17} /> {loading ? 'Please wait…' : 'Start live tracking'}
-                </Button>
-              </>
-            )}
-          </Card>
+          <div className="sj-hero-note">
+            <ShieldCheck size={18} />
+            <span>Your safety matters at every step.</span>
+          </div>
         </div>
-      )}
 
-      <section className="mt-12" aria-labelledby="tips">
-        <h2 id="tips" className="flex items-center gap-2 font-display text-xl font-bold"><ShieldCheck size={20} /> Before you go</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {tips.map(([Icon, t, d]) => (
-            <div key={t} className="rounded-3xl bg-lilac/50 p-5">
-              <Icon size={22} />
-              <h3 className="mt-3 font-display font-bold">{t}</h3>
-              <p className="mt-1 text-sm text-ink-soft">{d}</p>
-            </div>
-          ))}
+        <div className="sj-hero-art">
+          <div className="sj-hero-circle">
+            <Navigation size={65} strokeWidth={1.4} />
+            <span className="sj-art-heart">
+              <Heart size={23} />
+            </span>
+          </div>
         </div>
       </section>
-    </AppShell>
+
+      <main className="sj-main">
+
+        {error && (
+          <div className="sj-info-note" style={{ color: '#c93c37', marginBottom: 15 }}>
+            <AlertCircle size={19} />
+            <p>{String(error)}</p>
+          </div>
+        )}
+
+        {message && (
+          <div className="sj-info-note" style={{ color: '#55723b', marginBottom: 15 }}>
+            <CheckCircle2 size={19} />
+            <p>{message}</p>
+          </div>
+        )}
+
+        {!journeyStarted ? (
+          <section className="sj-form-card">
+
+            <div className="sj-section-heading">
+              <div className="sj-heading-icon">
+                <Route size={23} />
+              </div>
+
+              <div>
+                <h2>Plan Your Journey</h2>
+                <p>Fill in your travel details before you start.</p>
+              </div>
+            </div>
+
+            <div className="sj-info-note">
+              <AlertCircle size={19} />
+              <p>
+                Enter your correct starting point, destination and
+                expected arrival details.
+              </p>
+            </div>
+
+            <form onSubmit={handleStartJourney} className="sj-form">
+
+              <div className="sj-form-group">
+                <label htmlFor="startingPoint">Starting Point</label>
+                <div className="sj-input-icon">
+                  <CircleDot size={18} />
+                  <input
+                    id="startingPoint"
+                    type="text"
+                    placeholder="Enter your starting location"
+                    value={startingPoint}
+                    onChange={(e) => setStartingPoint(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="sj-form-group">
+                <label htmlFor="destination">Destination</label>
+                <div className="sj-input-icon">
+                  <MapPin size={18} />
+                  <input
+                    id="destination"
+                    type="text"
+                    placeholder="Enter your destination"
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="sj-form-group">
+                <label htmlFor="arrivalDate">Expected Arrival Date</label>
+                <div className="sj-input-icon">
+                  <CalendarDays size={18} />
+                  <input
+                    id="arrivalDate"
+                    type="date"
+                    value={arrivalDate}
+                    min={minDate}
+                    onChange={(e) => setArrivalDate(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="sj-form-group">
+                <label htmlFor="arrivalTime">Expected Arrival Time</label>
+                <div className="sj-input-icon">
+                  <Clock size={18} />
+                  <input
+                    id="arrivalTime"
+                    type="time"
+                    value={arrivalTime}
+                    onChange={(e) => setArrivalTime(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="sj-start-btn"
+                disabled={loading}
+              >
+                <Navigation size={18} />
+                {loading ? 'Starting...' : 'Start My Journey'}
+              </button>
+
+            </form>
+
+            <div className="sj-form-footer">
+              <ShieldCheck size={17} />
+              <span>Travel smart. Stay safe. Stay connected.</span>
+            </div>
+          </section>
+        ) : (
+          <section className="sj-status-card">
+
+            <div className="sj-status-top">
+              <div className="sj-success-icon">
+                <CheckCircle2 size={35} />
+              </div>
+
+              <div>
+                <h2>Your Journey Has Started!</h2>
+                <p>Journey ID: {journeyDetails.id}</p>
+              </div>
+
+              <span className="sj-active-badge">
+                <span></span>
+                Active
+              </span>
+            </div>
+
+            <div className="sj-route-card">
+              <div className="sj-route-line">
+                <div className="sj-route-point start">
+                  <CircleDot size={22} />
+                </div>
+
+                <div className="sj-route-dash"></div>
+
+                <div className="sj-route-point end">
+                  <Flag size={21} />
+                </div>
+              </div>
+
+              <div className="sj-route-locations">
+                <div>
+                  <span>STARTING POINT</span>
+                  <h3>{journeyDetails.startingPoint}</h3>
+                </div>
+
+                <div className="sj-destination-location">
+                  <span>DESTINATION</span>
+                  <h3>{journeyDetails.destination}</h3>
+                </div>
+              </div>
+            </div>
+
+            <div className="sj-arrival-details">
+              <div className="sj-arrival-item">
+                <div className="sj-arrival-icon">
+                  <CalendarDays size={21} />
+                </div>
+                <div>
+                  <span>Expected Arrival Date</span>
+                  <h3>{formatDate(journeyDetails.arrivalDate)}</h3>
+                </div>
+              </div>
+
+              <div className="sj-arrival-item">
+                <div className="sj-arrival-icon">
+                  <Clock size={21} />
+                </div>
+                <div>
+                  <span>Expected Arrival Time</span>
+                  <h3>{formatTime(journeyDetails.arrivalTime)}</h3>
+                </div>
+              </div>
+            </div>
+
+            <div className="sj-reminder">
+              <Heart size={20} />
+              <div>
+                <h3>Travel Safely!</h3>
+                <p>
+                  Stay alert, keep your phone charged and
+                  inform someone you trust about your journey.
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              background: '#f0ead6',
+              padding: '18px',
+              borderRadius: '12px',
+              marginTop: '18px'
+            }}>
+              <h3 style={{ marginTop: 0 }}>
+                <Radio size={18} style={{ verticalAlign: 'middle' }} />
+                {' '}Live GPS Tracking
+              </h3>
+
+              {trackingActive ? (
+                <>
+                  <p style={{ color: '#55723b' }}>
+                    Live tracking is active.
+                  </p>
+
+                  {trackingUrl && (
+                    <div style={{
+                      background: '#ffffff',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      marginTop: '12px'
+                    }}>
+                      <p><strong>Your Tracking Link:</strong></p>
+
+                      <input
+                        type="text"
+                        value={trackingUrl}
+                        readOnly
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          boxSizing: 'border-box',
+                          marginBottom: '10px'
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        className="sj-start-btn"
+                        onClick={handleCopyTrackingLink}
+                      >
+                        Copy Tracking Link
+                      </button>
+                    </div>
+                  )}
+
+                  {lastLocation && (
+                    <p>
+                      Latitude: {lastLocation.latitude.toFixed(6)}
+                      <br />
+                      Longitude: {lastLocation.longitude.toFixed(6)}
+                    </p>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleStopTracking}
+                    disabled={loading}
+                    className="sj-end-btn"
+                  >
+                    Stop Live Tracking
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p>
+                    Start sharing your current GPS location with the tracking service.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleStartTracking}
+                    disabled={loading}
+                    className="sj-start-btn"
+                  >
+                    <LocateFixed size={18} />
+                    {loading ? 'Please wait...' : 'Start Live Tracking'}
+                  </button>
+                </>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCheckIn}
+              disabled={loading}
+              className="sj-start-btn"
+              style={{ marginTop: '15px' }}
+            >
+              <CheckCircle2 size={18} />
+              Check In
+            </button>
+
+            <button
+              type="button"
+              className="sj-end-btn"
+              onClick={handleEndJourney}
+              disabled={loading}
+              style={{ marginTop: '15px' }}
+            >
+              <CheckCircle2 size={18} />
+              Complete Journey
+            </button>
+
+            <button
+              type="button"
+              className="sj-end-btn"
+              onClick={handleCancelJourney}
+              disabled={loading}
+              style={{ marginTop: '10px', background: '#c93c37' }}
+            >
+              Cancel Journey
+            </button>
+
+          </section>
+        )}
+
+        <section className="sj-tips-section">
+          <div className="sj-tips-heading">
+            <ShieldCheck size={22} />
+            <div>
+              <h2>Travel Safety Tips</h2>
+              <p>A few simple steps for a safer journey.</p>
+            </div>
+          </div>
+
+          <div className="sj-tips-grid">
+            <div className="sj-tip-card">
+              <div className="sj-tip-icon"><CarFront size={23} /></div>
+              <h3>Keep Your Phone Charged</h3>
+              <p>Make sure your phone has enough battery before travelling.</p>
+            </div>
+
+            <div className="sj-tip-card">
+              <div className="sj-tip-icon"><Heart size={23} /></div>
+              <h3>Inform Someone</h3>
+              <p>Share your travel plans with someone you trust.</p>
+            </div>
+
+            <div className="sj-tip-card">
+              <div className="sj-tip-icon"><MapPin size={23} /></div>
+              <h3>Know Your Route</h3>
+              <p>Be aware of your route and nearby safe places.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="sj-footer">
+        <div className="sj-footer-brand">
+          <ShieldCheck size={21} />
+          <span>SafeHer</span>
+        </div>
+        <p>Stay Safe. Stay Strong. Stay Confident.</p>
+        <span>© 2026 SafeHer. All rights reserved.</span>
+      </footer>
+
+    </div>
   )
 }
 

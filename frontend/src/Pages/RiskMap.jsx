@@ -1,329 +1,296 @@
-import { useEffect, useState } from 'react'
-import 'leaflet/dist/leaflet.css'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
-import L from 'leaflet'
-import {
-  MapPin, ShieldCheck, AlertTriangle, RefreshCw, Navigation,
-  Info, LocateFixed,
-} from 'lucide-react'
-import api from '../services/api'
-import AppShell from '../components/AppShell'
-import Button from '../components/Button'
-import Card from '../components/Card'
-import { PageTitle } from '../components/FormBits'
 
-// Create Risk Marker Icon
-const createRiskIcon = (color) => {
-  return L.divIcon({
-    className: 'risk-marker-icon',
-    html: `
-      <div style="
-        width: 20px;
-        height: 20px;
-        background-color: ${color};
-        border: 3px solid white;
-        border-radius: 50%;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-      "></div>
-    `,
-    iconSize: [26, 26],
-    iconAnchor: [13, 13]
-  })
-}
+import { useState } from 'react'
+import {
+  ShieldCheck,
+  ArrowLeft,
+  MapPin,
+  Search,
+  LocateFixed,
+  AlertCircle,
+  Navigation,
+  Heart,
+  Info,
+  Map,
+  Phone
+} from 'lucide-react'
+import '../App.css'
 
 function RiskMap() {
-
-  const [cells, setCells] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [location, setLocation] = useState('')
+  const [currentLocation, setCurrentLocation] = useState(null)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [location, setLocation] = useState(null)
-  const [locationError, setLocationError] = useState('')
+  const [searchedLocation, setSearchedLocation] = useState('')
 
-  // Fetch Risk Cells from Backend
-  const fetchRiskCells = async (showLoading = false) => {
+  function handleSearch(e) {
+    e.preventDefault()
+    setError('')
+    setSearchedLocation('')
 
-    try {
-
-      if (showLoading) {
-        setLoading(true)
-      }
-
-      const response = await api.get('/grid-cells')
-
-      setCells(Array.isArray(response.data) ? response.data : [])
-
-      setError('')
-
-    } catch (err) {
-
-      console.error('Risk Map Error:', err)
-
-      // Show error for initial load or manual refresh
-      if (showLoading) {
-        setError('Unable to load risk map data. Please try again.')
-      }
-
-    } finally {
-
-      if (showLoading) {
-        setLoading(false)
-      }
-
-    }
-  }
-
-  // Initial Load and Automatic Refresh Every 5 Seconds
-  useEffect(() => {
-
-    // Load risk data when page opens
-    fetchRiskCells(true)
-
-    // Automatically fetch updated risk data every 5 seconds
-    const interval = setInterval(() => {
-      fetchRiskCells(false)
-    }, 5000)
-
-    // Stop automatic refresh when component closes
-    return () => {
-      clearInterval(interval)
-    }
-
-  }, [])
-
-  // Get Current Location
-  const getMyLocation = () => {
-
-    setLocationError('')
-
-    if (!navigator.geolocation) {
-      setLocationError('Location is not supported by this browser.')
+    if (!location.trim()) {
+      setError('Please enter a location to search.')
       return
     }
 
+    setSearchedLocation(location.trim())
+  }
+
+  function handleCurrentLocation() {
+    setError('')
+
+    if (!navigator.geolocation) {
+      setError('Location is not supported by this browser.')
+      return
+    }
+
+    setLoading(true)
+
     navigator.geolocation.getCurrentPosition(
-
       (position) => {
-
-        setLocation({
+        setCurrentLocation({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
         })
-
+        setLoading(false)
+        setError('')
       },
-
-      () => {
-
-        setLocationError(
-          'Unable to access location. Please allow location permission.'
-        )
-
+      (gpsError) => {
+        setError('Unable to get your location: ' + gpsError.message)
+        setLoading(false)
       },
-
       {
         enableHighAccuracy: true,
-        timeout: 10000
+        timeout: 15000
       }
-
     )
   }
 
-  // Get Risk Level
-  const getRiskLevel = (score) => {
-
-    if (score === null || score === undefined) return 'Unknown'
-
-    if (score < 30) return 'Low'
-
-    if (score < 60) return 'Medium'
-
-    return 'High'
+  function logout() {
+    sessionStorage.clear()
+    window.location.href = '/login'
   }
-
-  // Get Risk Color
-  const getRiskColor = (level) => {
-
-    if (level === 'Low') return '#16a34a'
-
-    if (level === 'Medium') return '#d97706'
-
-    if (level === 'High') return '#dc2626'
-
-    return '#64748b'
-  }
-
-  // Calculate Risk Counts
-  const lowCount = cells.filter(
-    cell => getRiskLevel(cell.riskScore) === 'Low'
-  ).length
-
-  const mediumCount = cells.filter(
-    cell => getRiskLevel(cell.riskScore) === 'Medium'
-  ).length
-
-  const highCount = cells.filter(
-    cell => getRiskLevel(cell.riskScore) === 'High'
-  ).length
-
-const legend = [
-    ['#16a34a', 'Low risk (0 to 29)'],
-    ['#d97706', 'Medium risk (30 to 59)'],
-    ['#dc2626', 'High risk (60 to 100)'],
-  ]
 
   return (
-    <AppShell active="map" wide>
-      <PageTitle title="Safety risk map" subtitle="See which areas have had reported incidents. Updates every 5 seconds.">
-        <Button type="button" variant="secondary" onClick={() => fetchRiskCells(true)}>
-          <RefreshCw size={17} /> Refresh
-        </Button>
-      </PageTitle>
+    <div className="rm-page">
+      <nav className="rm-navbar">
+        <a href="/dashboard" className="rm-brand">
+          <span className="rm-brand-icon">
+            <ShieldCheck size={24} />
+          </span>
+          <span>SafeHer</span>
+        </a>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        {/* Map */}
-        <div className="isolate overflow-hidden rounded-3xl bg-white shadow-soft">
-          {location ? (
-            <MapContainer
-              center={[location.latitude, location.longitude]}
-              zoom={18}
-              style={{ height: '520px', width: '100%' }}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution="&copy; OpenStreetMap contributors"
+        <div className="rm-nav-right">
+          <a href="/dashboard" className="rm-dashboard-link">
+            <ArrowLeft size={17} />
+            Dashboard
+          </a>
+
+          <button className="rm-logout-btn" onClick={logout}>
+            Logout
+          </button>
+        </div>
+      </nav>
+
+      <section className="rm-hero">
+        <div className="rm-hero-content">
+          <span className="rm-eyebrow">
+            <MapPin size={15} />
+            STAY AWARE. STAY SAFE.
+          </span>
+
+          <h1>Safety Risk Map</h1>
+
+          <p>
+            Explore locations, stay aware of your surroundings
+            and make informed decisions while travelling.
+          </p>
+
+          <div className="rm-hero-note">
+            <ShieldCheck size={18} />
+            <span>Your awareness is your first line of safety.</span>
+          </div>
+        </div>
+
+        <div className="rm-hero-art">
+          <div className="rm-hero-circle">
+            <Map size={65} strokeWidth={1.4} />
+            <span className="rm-art-heart">
+              <Heart size={23} />
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <main className="rm-main">
+        <section className="rm-search-card">
+          <div className="rm-section-heading">
+            <div className="rm-heading-icon">
+              <Search size={23} />
+            </div>
+
+            <div>
+              <h2>Explore a Location</h2>
+              <p>Search for a place you want to explore.</p>
+            </div>
+          </div>
+
+          <form className="rm-search-form" onSubmit={handleSearch}>
+            <div className="rm-search-input">
+              <MapPin size={19} />
+              <input
+                type="text"
+                placeholder="Enter city, area or location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
               />
+            </div>
 
-              <Marker position={[location.latitude, location.longitude]} icon={createRiskIcon('#2A1B3D')}>
-                <Popup>Your current location</Popup>
-              </Marker>
+            <button type="submit" className="rm-search-btn">
+              <Search size={18} />
+              Search
+            </button>
 
-              {cells.map((cell) => {
-                if (cell.latitude == null || cell.longitude == null) {
-                  return null
-                }
+            <button
+              type="button"
+              className="rm-location-btn"
+              onClick={handleCurrentLocation}
+              disabled={loading}
+            >
+              <LocateFixed size={18} />
+              {loading ? 'Locating...' : 'My Location'}
+            </button>
+          </form>
 
-                const level = getRiskLevel(cell.riskScore)
+          {error && (
+            <div className="rm-alert">
+              <AlertCircle size={18} />
+              <span>{error}</span>
+            </div>
+          )}
+        </section>
 
-                return (
-                  <Marker
-                    key={cell.id}
-                    position={[cell.latitude, cell.longitude]}
-                    icon={createRiskIcon(getRiskColor(level))}
-                  >
-                    <Popup>
-                      <strong>{level} Risk</strong>
-                      <br />
-                      Grid Cell: {cell.geohashCell}
-                      <br />
-                      Risk Score: {cell.riskScore}
-                    </Popup>
-                  </Marker>
-                )
-              })}
-            </MapContainer>
-          ) : (
-            <div className="grid h-[420px] place-items-center bg-lilac/40 p-8 text-center">
+        <section className="rm-map-card">
+          <div className="rm-map-heading">
+            <div>
+              <h2>Explore the Map</h2>
+              <p>View your searched location on the map.</p>
+            </div>
+            <MapPin size={23} />
+          </div>
+
+          {searchedLocation ? (
+            <div className="rm-location-result">
+              <MapPin size={20} />
               <div>
-                <MapPin className="mx-auto text-ink-faint" size={42} />
-                <h2 className="mt-4 font-display text-xl font-bold">Show the map</h2>
-                <p className="mx-auto mt-2 max-w-xs text-ink-soft">Allow location access to see risk areas around you.</p>
-                <Button type="button" className="mt-5" onClick={getMyLocation}>
-                  <LocateFixed size={17} /> Use my location
-                </Button>
-                {locationError && <p role="alert" className="mt-4 text-sm font-medium text-sos">{locationError}</p>}
+                <strong>Location searched</strong>
+                <p>{searchedLocation}</p>
+              </div>
+            </div>
+          ) : null}
+
+          {currentLocation && (
+            <div className="rm-location-result">
+              <LocateFixed size={20} />
+              <div>
+                <strong>Your current coordinates</strong>
+                <p>
+                  Latitude: {currentLocation.latitude.toFixed(6)}
+                  <br />
+                  Longitude: {currentLocation.longitude.toFixed(6)}
+                </p>
               </div>
             </div>
           )}
-        </div>
 
-        {/* Side panel */}
-        <div className="space-y-5">
-          {location && (
-            <Card className="!p-5">
-              <h2 className="flex items-center gap-2 font-display font-bold"><Navigation size={18} /> Your location</h2>
-              <p className="mt-2 text-sm text-ink-soft">
-                Latitude {location.latitude.toFixed(5)}<br />Longitude {location.longitude.toFixed(5)}
-              </p>
-              <Button type="button" variant="secondary" className="mt-3" onClick={getMyLocation}>
-                <LocateFixed size={16} /> Update
-              </Button>
-              {locationError && <p role="alert" className="mt-3 text-sm font-medium text-sos">{locationError}</p>}
-            </Card>
-          )}
-
-          <Card className="!p-5">
-            <h2 className="font-display font-bold">Risk levels</h2>
-            <ul className="mt-3 space-y-2 text-sm text-ink-soft">
-              {legend.map(([color, label]) => (
-                <li key={label} className="flex items-center gap-3">
-                  <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: color }} /> {label}
-                </li>
-              ))}
-            </ul>
-          </Card>
-
-          <div className="grid grid-cols-3 gap-3 text-center">
-            {[
-              [ShieldCheck, '#16a34a', lowCount, 'Low'],
-              [AlertTriangle, '#d97706', mediumCount, 'Medium'],
-              [AlertTriangle, '#dc2626', highCount, 'High'],
-            ].map(([Icon, color, count, label]) => (
-              <div key={label} className="rounded-2xl bg-white p-3 shadow-soft">
-                <Icon className="mx-auto" size={20} color={color} />
-                <p className="mt-1 font-display text-2xl font-extrabold" style={{ color }}>{count}</p>
-                <p className="text-xs text-ink-soft">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Cells */}
-      <section className="mt-10" aria-labelledby="cells">
-        <h2 id="cells" className="font-display text-xl font-bold">Risk cells</h2>
-
-        {loading ? (
-          <p className="mt-4 text-ink-soft">Loading risk information…</p>
-        ) : error ? (
-          <div role="alert" className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl bg-[#FBDDE2] p-4 text-[#A11D31]">
-            {error}
-            <Button type="button" variant="secondary" onClick={() => fetchRiskCells(true)}>Try again</Button>
-          </div>
-        ) : cells.length === 0 ? (
-          <div className="mt-4 rounded-3xl border-2 border-dashed border-ink/15 p-8 text-center">
-            <MapPin className="mx-auto text-ink-faint" size={36} />
-            <h3 className="mt-3 font-display text-lg font-bold">No risk data yet</h3>
-            <p className="mx-auto mt-1 max-w-md text-sm text-ink-soft">
-              Risk cells appear after incident reports with coordinates are submitted.
+          <div className="rm-map-placeholder">
+            <div className="rm-map-placeholder-icon">
+              <Map size={48} />
+            </div>
+            <h3>Map View</h3>
+            <p>
+              Location search and current GPS coordinates are available.
+              Connect a map provider to display the interactive map here.
             </p>
           </div>
-        ) : (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {cells.map((cell) => {
-              const level = getRiskLevel(cell.riskScore)
-              return (
-                <div key={cell.id} className="flex items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-soft">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">Grid cell {cell.geohashCell}</p>
-                    <p className="text-sm text-ink-soft">Score: {cell.riskScore ?? 'Not calculated'}</p>
-                    <p className="text-xs text-ink-faint">
-                      Updated {cell.lastCalculatedAt ? new Date(cell.lastCalculatedAt).toLocaleString() : 'not available'}
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-full px-3 py-1 text-xs font-bold text-white" style={{ backgroundColor: getRiskColor(level) }}>
-                    {level}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </section>
 
-      <p className="mt-8 flex items-start gap-3 rounded-2xl bg-lilac/60 p-4 text-sm text-ink-soft">
-        <Info size={20} className="mt-0.5 shrink-0 text-ink" />
-        This map is for information only and does not guarantee safety. In an emergency, call 112.
-      </p>
-    </AppShell>
+          <div className="rm-map-disclaimer">
+            <Info size={17} />
+            <span>
+              This page does not currently display verified live safety
+              ratings or danger-zone information.
+            </span>
+          </div>
+        </section>
+
+        <section className="rm-tips-section">
+          <div className="rm-tips-heading">
+            <ShieldCheck size={23} />
+            <div>
+              <h2>Smart Safety Tips</h2>
+              <p>Keep these precautions in mind when travelling.</p>
+            </div>
+          </div>
+
+          <div className="rm-tips-grid">
+            <div className="rm-tip-card">
+              <div className="rm-tip-icon">
+                <MapPin size={23} />
+              </div>
+              <h3>Know Your Surroundings</h3>
+              <p>
+                Learn about the area and identify nearby public places
+                before travelling.
+              </p>
+            </div>
+
+            <div className="rm-tip-card">
+              <div className="rm-tip-icon">
+                <Navigation size={23} />
+              </div>
+              <h3>Plan Your Route</h3>
+              <p>
+                Prefer familiar routes and plan your journey in advance.
+              </p>
+            </div>
+
+            <div className="rm-tip-card">
+              <div className="rm-tip-icon">
+                <Heart size={23} />
+              </div>
+              <h3>Stay Connected</h3>
+              <p>
+                Inform trusted contacts about your travel plans.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rm-emergency-card">
+          <div className="rm-emergency-icon">
+            <Phone size={25} />
+          </div>
+
+          <div>
+            <h3>Need Emergency Assistance?</h3>
+            <p>
+              If you are in immediate danger, move to a safer place
+              and contact emergency services or someone you trust.
+            </p>
+            <strong>India Emergency Helpline: 112</strong>
+          </div>
+        </section>
+      </main>
+
+      <footer className="rm-footer">
+        <div className="rm-footer-brand">
+          <ShieldCheck size={22} />
+          <span>SafeHer</span>
+        </div>
+        <p>Stay Safe. Stay Strong. Stay Confident.</p>
+        <span>© 2026 SafeHer. All rights reserved.</span>
+      </footer>
+    </div>
   )
 }
 
