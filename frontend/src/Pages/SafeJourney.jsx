@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react'
 import api from '../services/api'
 import {
@@ -42,7 +41,6 @@ function SafeJourney() {
     String(today.getDate()).padStart(2, '0')
   ].join('-')
 
-  // START JOURNEY
   async function handleStartJourney(e) {
     e.preventDefault()
 
@@ -98,11 +96,7 @@ function SafeJourney() {
       })
 
       setJourneyStarted(true)
-
-      setMessage('Journey saved. Starting live tracking...')
-
-      // AUTOMATICALLY START LIVE TRACKING
-      await handleStartTracking()
+      setMessage('Your journey has been saved successfully!')
 
     } catch (err) {
       console.error('START JOURNEY ERROR:', err)
@@ -120,7 +114,6 @@ function SafeJourney() {
     }
   }
 
-  // CHECK IN
   async function handleCheckIn() {
     if (!journeyDetails?.id || !userId) return
 
@@ -143,7 +136,6 @@ function SafeJourney() {
     }
   }
 
-  // STOP GPS WATCH
   function stopGpsWatch() {
     if (watchIdRef.current !== null && navigator.geolocation) {
       navigator.geolocation.clearWatch(watchIdRef.current)
@@ -152,7 +144,6 @@ function SafeJourney() {
     }
   }
 
-  // START LIVE TRACKING
   async function handleStartTracking() {
     setError('')
     setMessage('')
@@ -249,7 +240,6 @@ function SafeJourney() {
     }
   }
 
-  // STOP LIVE TRACKING
   async function handleStopTracking() {
     try {
       setLoading(true)
@@ -277,7 +267,6 @@ function SafeJourney() {
     }
   }
 
-  // COMPLETE JOURNEY
   async function handleEndJourney() {
     if (!journeyDetails?.id) return
 
@@ -323,7 +312,6 @@ function SafeJourney() {
     }
   }
 
-  // CANCEL JOURNEY
   async function handleCancelJourney() {
     if (!journeyDetails?.id) return
 
@@ -369,7 +357,6 @@ function SafeJourney() {
     }
   }
 
-  // COPY TRACKING LINK
   async function handleCopyTrackingLink() {
     try {
       await navigator.clipboard.writeText(trackingUrl)
@@ -382,7 +369,6 @@ function SafeJourney() {
     }
   }
 
-  // FORMAT DATE
   function formatDate(date) {
     return new Date(date + 'T00:00:00').toLocaleDateString('en-IN', {
       day: 'numeric',
@@ -391,7 +377,6 @@ function SafeJourney() {
     })
   }
 
-  // FORMAT TIME
   function formatTime(time) {
     const [hours, minutes] = time.split(':')
     const date = new Date()
@@ -405,14 +390,13 @@ function SafeJourney() {
     })
   }
 
-  // LOGOUT
   function logout() {
     stopGpsWatch()
     sessionStorage.clear()
     window.location.href = '/login'
   }
 
-  const tips = [
+const tips = [
     [CarFront, 'Charge your phone', 'Make sure you have enough battery before you leave.'],
     [Heart, 'Tell someone', 'Share your plan with a person you trust.'],
     [MapPin, 'Know your route', 'Note safe places along the way, like shops or stations.'],
@@ -420,72 +404,32 @@ function SafeJourney() {
 
   return (
     <AppShell active="journey" onLogout={logout}>
-      <PageTitle
-        title="Safe journey"
-        subtitle="Tell us where you’re going and when you’ll arrive. If you don’t check in, your contacts are told."
-      />
+      <PageTitle title="Safe journey" subtitle="Tell us where you’re going and when you’ll arrive. If you don’t check in, your contacts are told." />
 
       <Alert>{error ? String(error) : ''}</Alert>
       <Alert type="success">{message}</Alert>
 
       {!journeyStarted ? (
         <Card className="max-w-2xl">
-          <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-            <Route size={20} /> Plan your journey
-          </h2>
-
+          <h2 className="flex items-center gap-2 font-display text-xl font-bold"><Route size={20} /> Plan your journey</h2>
           <p className="mb-6 mt-1 flex items-start gap-2 text-sm text-ink-soft">
             <AlertCircle size={16} className="mt-0.5 shrink-0" />
             Enter your real start, destination and expected arrival time.
           </p>
 
           <form onSubmit={handleStartJourney} noValidate>
-            <Field
-              label="Starting point"
-              icon={CircleDot}
-              placeholder="Where are you now?"
-              value={startingPoint}
-              onChange={(e) => setStartingPoint(e.target.value)}
-              required
-            />
-
-            <Field
-              label="Destination"
-              icon={MapPin}
-              placeholder="Where are you going?"
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              required
-            />
-
+            <Field label="Starting point" icon={CircleDot} placeholder="Where are you now?"
+              value={startingPoint} onChange={(e) => setStartingPoint(e.target.value)} required />
+            <Field label="Destination" icon={MapPin} placeholder="Where are you going?"
+              value={destination} onChange={(e) => setDestination(e.target.value)} required />
             <div className="grid gap-x-4 sm:grid-cols-2">
-              <Field
-                label="Arrival date"
-                icon={CalendarDays}
-                type="date"
-                min={minDate}
-                value={arrivalDate}
-                onChange={(e) => setArrivalDate(e.target.value)}
-                required
-              />
-
-              <Field
-                label="Arrival time"
-                icon={Clock}
-                type="time"
-                value={arrivalTime}
-                onChange={(e) => setArrivalTime(e.target.value)}
-                required
-              />
+              <Field label="Arrival date" icon={CalendarDays} type="date" min={minDate}
+                value={arrivalDate} onChange={(e) => setArrivalDate(e.target.value)} required />
+              <Field label="Arrival time" icon={Clock} type="time"
+                value={arrivalTime} onChange={(e) => setArrivalTime(e.target.value)} required />
             </div>
-
-            <Button
-              type="submit"
-              className="mt-2 w-full"
-              disabled={loading}
-            >
-              <Navigation size={17} />
-              {loading ? 'Starting…' : 'Start my journey'}
+            <Button type="submit" className="mt-2 w-full" disabled={loading}>
+              <Navigation size={17} /> {loading ? 'Starting…' : 'Start my journey'}
             </Button>
           </form>
         </Card>
@@ -494,129 +438,69 @@ function SafeJourney() {
           <Card>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="font-display text-xl font-bold">
-                  Journey in progress
-                </h2>
-                <p className="text-sm text-ink-soft">
-                  Journey ID: {journeyDetails.id}
-                </p>
+                <h2 className="font-display text-xl font-bold">Journey in progress</h2>
+                <p className="text-sm text-ink-soft">Journey ID: {journeyDetails.id}</p>
               </div>
-
               <Badge tone="safe">Active</Badge>
             </div>
 
             <ol className="mt-6 space-y-1">
               <li className="flex gap-4">
-                <span className="mt-1 text-safe">
-                  <CircleDot size={22} />
-                </span>
-
+                <span className="mt-1 text-safe"><CircleDot size={22} /></span>
                 <div className="pb-5">
                   <p className="text-sm text-ink-soft">Starting point</p>
-                  <p className="font-display text-lg font-bold">
-                    {journeyDetails.startingPoint}
-                  </p>
+                  <p className="font-display text-lg font-bold">{journeyDetails.startingPoint}</p>
                 </div>
               </li>
-
               <li className="flex gap-4">
-                <span className="mt-1 text-sos">
-                  <Flag size={21} />
-                </span>
-
+                <span className="mt-1 text-sos"><Flag size={21} /></span>
                 <div>
                   <p className="text-sm text-ink-soft">Destination</p>
-                  <p className="font-display text-lg font-bold">
-                    {journeyDetails.destination}
-                  </p>
+                  <p className="font-display text-lg font-bold">{journeyDetails.destination}</p>
                 </div>
               </li>
             </ol>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-lilac/60 p-4">
-                <p className="flex items-center gap-2 text-sm text-ink-soft">
-                  <CalendarDays size={16} /> Arrival date
-                </p>
-                <p className="mt-1 font-semibold">
-                  {formatDate(journeyDetails.arrivalDate)}
-                </p>
+                <p className="flex items-center gap-2 text-sm text-ink-soft"><CalendarDays size={16} /> Arrival date</p>
+                <p className="mt-1 font-semibold">{formatDate(journeyDetails.arrivalDate)}</p>
               </div>
-
               <div className="rounded-2xl bg-lilac/60 p-4">
-                <p className="flex items-center gap-2 text-sm text-ink-soft">
-                  <Clock size={16} /> Arrival time
-                </p>
-                <p className="mt-1 font-semibold">
-                  {formatTime(journeyDetails.arrivalTime)}
-                </p>
+                <p className="flex items-center gap-2 text-sm text-ink-soft"><Clock size={16} /> Arrival time</p>
+                <p className="mt-1 font-semibold">{formatTime(journeyDetails.arrivalTime)}</p>
               </div>
             </div>
 
             <div className="mt-6 flex flex-col gap-3">
-              <Button
-                type="button"
-                onClick={handleCheckIn}
-                disabled={loading}
-              >
+              <Button type="button" onClick={handleCheckIn} disabled={loading}>
                 <CheckCircle2 size={17} /> Check in
               </Button>
-
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleEndJourney}
-                disabled={loading}
-              >
+              <Button type="button" variant="secondary" onClick={handleEndJourney} disabled={loading}>
                 Complete journey
               </Button>
-
-              <Button
-                type="button"
-                variant="danger"
-                onClick={handleCancelJourney}
-                disabled={loading}
-              >
+              <Button type="button" variant="danger" onClick={handleCancelJourney} disabled={loading}>
                 Cancel journey
               </Button>
             </div>
           </Card>
 
           <Card className="h-fit">
-            <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-              <Radio size={20} /> Live GPS tracking
-            </h2>
+            <h2 className="flex items-center gap-2 font-display text-xl font-bold"><Radio size={20} /> Live GPS tracking</h2>
 
             {trackingActive ? (
               <>
                 <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-[#136B5D]">
-                  <span className="h-2.5 w-2.5 rounded-full bg-safe" />
-                  Tracking is on
+                  <span className="h-2.5 w-2.5 rounded-full bg-safe" /> Tracking is on
                 </p>
 
                 {trackingUrl && (
                   <div className="mt-4">
-                    <label
-                      htmlFor="trackUrl"
-                      className="mb-1.5 block text-sm font-semibold"
-                    >
-                      Your tracking link
-                    </label>
-
+                    <label htmlFor="trackUrl" className="mb-1.5 block text-sm font-semibold">Your tracking link</label>
                     <div className="flex gap-2">
-                      <input
-                        id="trackUrl"
-                        readOnly
-                        value={trackingUrl}
-                        className="h-12 min-w-0 flex-1 rounded-2xl bg-cream px-4 text-sm ring-1 ring-ink/15"
-                      />
-
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={handleCopyTrackingLink}
-                        aria-label="Copy tracking link"
-                      >
+                      <input id="trackUrl" readOnly value={trackingUrl}
+                        className="h-12 min-w-0 flex-1 rounded-2xl bg-cream px-4 text-sm ring-1 ring-ink/15" />
+                      <Button type="button" variant="secondary" onClick={handleCopyTrackingLink} aria-label="Copy tracking link">
                         <Copy size={17} />
                       </Button>
                     </div>
@@ -625,31 +509,23 @@ function SafeJourney() {
 
                 {lastLocation && (
                   <p className="mt-4 rounded-2xl bg-lilac/60 p-4 text-sm text-ink-soft">
-                    Latitude {lastLocation.latitude.toFixed(6)}
-                    <br />
+                    Latitude {lastLocation.latitude.toFixed(6)}<br />
                     Longitude {lastLocation.longitude.toFixed(6)}
                   </p>
                 )}
 
-                <Button
-                  type="button"
-                  variant="danger"
-                  className="mt-5 w-full"
-                  onClick={handleStopTracking}
-                  disabled={loading}
-                >
+                <Button type="button" variant="danger" className="mt-5 w-full" onClick={handleStopTracking} disabled={loading}>
                   Stop live tracking
                 </Button>
               </>
             ) : (
               <>
                 <p className="mb-5 mt-2 text-sm text-ink-soft">
-                  Live tracking starts automatically when you start your journey.
+                  Share your live location with a link your contacts can open in any browser.
                 </p>
-
-                <p className="text-sm text-ink-soft">
-                  {loading ? 'Starting live tracking...' : 'Waiting for tracking to start.'}
-                </p>
+                <Button type="button" className="w-full" onClick={handleStartTracking} disabled={loading}>
+                  <LocateFixed size={17} /> {loading ? 'Please wait…' : 'Start live tracking'}
+                </Button>
               </>
             )}
           </Card>
@@ -657,13 +533,7 @@ function SafeJourney() {
       )}
 
       <section className="mt-12" aria-labelledby="tips">
-        <h2
-          id="tips"
-          className="flex items-center gap-2 font-display text-xl font-bold"
-        >
-          <ShieldCheck size={20} /> Before you go
-        </h2>
-
+        <h2 id="tips" className="flex items-center gap-2 font-display text-xl font-bold"><ShieldCheck size={20} /> Before you go</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           {tips.map(([Icon, t, d]) => (
             <div key={t} className="rounded-3xl bg-lilac/50 p-5">
